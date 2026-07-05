@@ -25,8 +25,36 @@ import {
   normalizeSkillKeys,
   type PortfolioEditInitialValues,
 } from "@/lib/profile/portfolio-edit";
+import { validateReadyToPublish } from "@/lib/profile/validation";
 
 import { DashboardProfileClient } from "./_components/dashboard-profile-client";
+
+const DIGIT_MAP: Record<string, string> = {
+  "۰": "0",
+  "۱": "1",
+  "۲": "2",
+  "۳": "3",
+  "۴": "4",
+  "۵": "5",
+  "۶": "6",
+  "۷": "7",
+  "۸": "8",
+  "۹": "9",
+  "٠": "0",
+  "١": "1",
+  "٢": "2",
+  "٣": "3",
+  "٤": "4",
+  "٥": "5",
+  "٦": "6",
+  "٧": "7",
+  "٨": "8",
+  "٩": "9",
+};
+
+function normalizeDigits(value: string): string {
+  return value.replace(/[۰-۹٠-٩]/g, (char) => DIGIT_MAP[char] ?? char);
+}
 
 export default async function DashboardProfilePage() {
   const session = await getServerAuthSession();
@@ -208,6 +236,27 @@ export default async function DashboardProfilePage() {
       })) ?? [],
   };
 
+  const publishValidation = validateReadyToPublish({
+    firstName: profile?.firstName ?? "",
+    lastName: profile?.lastName ?? "",
+    stageName: profile?.stageName ?? "",
+    age: profile?.age ?? "",
+    phone: normalizeDigits(profile?.phone ?? ""),
+    address: profile?.address ?? "",
+    cityId: profile?.cityId ?? "",
+    avatarUrl: profile?.avatarUrl ?? "",
+    bio: profile?.bio ?? "",
+    introVideoMediaId: profile?.introVideoMediaId ?? "",
+  });
+
+  const publishSettings = {
+    canPublish: entitlementActive,
+    isPublished: profile?.visibility === "PUBLIC",
+    readinessIssues: publishValidation.success
+      ? []
+      : Array.from(new Set(publishValidation.error.issues.map((issue) => issue.message))),
+  };
+
   const isOwner = session.user.id === profileData.userId;
   const profileDataWithSaved = {
     ...profileData,
@@ -267,6 +316,7 @@ export default async function DashboardProfilePage() {
           enrolledCourses={enrolledCourses}
           registeredChallenges={registeredChallenges}
           savedSummary={savedSummary}
+          publishSettings={publishSettings}
         />
       </ProfilePageLayout>
     </div>

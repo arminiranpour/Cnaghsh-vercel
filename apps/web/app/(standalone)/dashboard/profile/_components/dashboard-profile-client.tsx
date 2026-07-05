@@ -10,6 +10,7 @@ import { SubscriptionPane } from "@/components/profile/editProfile/CenterPane/Su
 import { EditProfileChallengesPane } from "@/components/profile/editProfile/CenterPane/EditProfileChallengesPane";
 import { EditProfileCoursesPane } from "@/components/profile/editProfile/CenterPane/EditProfileCoursesPane";
 import { EditProfileArchivePane } from "@/components/profile/editProfile/CenterPane/EditProfileArchivePane";
+import { EditProfileSettingsPane } from "@/components/profile/editProfile/CenterPane/EditProfileSettingsPane";
 import {
   EditProfileLeftRail,
   type EditProfileTabId,
@@ -51,6 +52,11 @@ type DashboardProfileClientProps = {
     books: number;
     monologues: number;
   };
+  publishSettings: {
+    canPublish: boolean;
+    isPublished: boolean;
+    readinessIssues: string[];
+  };
 };
 
 const paymentStatusLabels: Record<string, string> = {
@@ -71,6 +77,7 @@ export function DashboardProfileClient({
   enrolledCourses,
   registeredChallenges,
   savedSummary,
+  publishSettings,
 }: DashboardProfileClientProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabId>("personal");
   const [isEditingPortfolio, setIsEditingPortfolio] = useState(false);
@@ -120,6 +127,12 @@ export function DashboardProfileClient({
           <EditProfileChallengesPane challenges={registeredChallenges} />
         ) : activeEditTab === "courses" ? (
           <EditProfileCoursesPane courses={enrolledCourses} />
+        ) : activeEditTab === "settings" ? (
+          <EditProfileSettingsPane
+            canPublish={publishSettings.canPublish}
+            isPublished={publishSettings.isPublished}
+            readinessIssues={publishSettings.readinessIssues}
+          />
         ) : (
           <PortfolioEditCenterPane
             initialValues={initialValues}
