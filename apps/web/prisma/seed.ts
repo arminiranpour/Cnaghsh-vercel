@@ -59,7 +59,7 @@ async function waitForDatabase() {
 
   throw new Error(
     `Unable to connect to the database using DATABASE_URL. Last error: ${lastErrorMessage}. ` +
-      'Ensure the Postgres service is running (e.g., `pnpm dev:infra`) and credentials in `apps/web/.env` are correct.',
+      'Ensure the Postgres service is running (e.g., `pnpm dev:infra`) and credentials in `apps/web/.env.local` are correct.',
   );
 }
 
