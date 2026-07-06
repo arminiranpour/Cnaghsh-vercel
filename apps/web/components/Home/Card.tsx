@@ -132,6 +132,16 @@ export default function Card({
         ) : null}
         {typeof rating === "number" ? (
           <div className="flex items-center gap-1">
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                lineHeight: `${NUM_H}px`,
+                color: "#FF7F19",
+              }}
+            >
+              {rating}
+            </span>
             <div
               className="relative -translate-y-[2px]"
               style={{
@@ -149,16 +159,7 @@ export default function Card({
               />
             </div>
 
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                lineHeight: `${NUM_H}px`,
-                color: "#FF7F19",
-              }}
-            >
-              {rating}
-            </span>
+
           </div>
         ) : null}
 
