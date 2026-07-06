@@ -28,7 +28,7 @@ export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps)
         />
 
         <div
-          className="relative flex items-center justify-center w-full h-full gap-12 md:flex-row"
+          className="relative flex items-center justify-center w-full h-full gap-12 p-8 md:flex-row"
           dir="ltr"
         >
           {/* RIGHT SIDE: Auth Panel (back to RTL) */}

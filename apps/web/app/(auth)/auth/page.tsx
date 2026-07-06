@@ -32,16 +32,17 @@ export default async function AuthPage({
   const callbackUrl = getFirstParam(searchParams?.callbackUrl);
   const initialTab = parseAuthTabParam(tabParam);
 
-  return (
-    <main
-      className="relative min-h-screen flex items-center justify-center bg-cover bg-center bg-no-repeat"
-      style={{ backgroundImage: "url('/images/auth-bg.jpg')" }}
-    >
-      <div className="w-full h-full px-4 py-12 mt-[120px]">
-        <AuthPageClient initialTab={initialTab} callbackUrl={callbackUrl} />
-      </div>
-    </main>
-  );
+return (
+  <main className="relative min-h-[100svh] w-full overflow-x-hidden">
+    <div
+      className="fixed inset-0 -z-10 bg-[#E5E5E5]"
+      aria-hidden="true"
+    />
+    <div className="relative flex min-h-[100svh] w-full items-center justify-center px-4 py-12 pt-[120px]">
+      <AuthPageClient initialTab={initialTab} callbackUrl={callbackUrl} />
+    </div>
+  </main>
+);
 }
 
 function getFirstParam(value?: string | string[] | null) {
