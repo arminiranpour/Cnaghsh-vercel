@@ -95,54 +95,25 @@ export default function Card({
           />
         </div>
 
-        {typeof rating === "number" ? (
-          <>
-            {/* Star */}
-            <div
-              className="absolute"
-              style={{
-                top: 177,
-                left: 84,
-                width: STAR_W,
-                height: STAR_H,
-              }}
-            >
-              <Image
-                src={starSrc}
-                alt="ستاره"
-                fill
-                unoptimized
-                sizes={`${STAR_W}px`}
-                style={{ objectFit: "contain" }}
-              />
-            </div>
-
-            {/* Rating */}
-            <div
-              className="absolute font-iransans"
-              style={{
-                top: 176,
-                left: 95,
-                fontSize: 12,
-                fontWeight: 600,
-                lineHeight: `${NUM_H}px`,
-                color: "#FF7F19",
-              }}
-            >
-              {rating}
-            </div>
-          </>
-        ) : null}
-
-        {level ? (
+    {/* Rating + Star + Level */}
+    {typeof rating === "number" || level ? (
+      
+      <div
+        className="absolute flex items-center justify-center gap-[32px] font-iransans"
+        style={{
+          top: 176,
+          left: 0,
+          width: "100%",
+          height: 18,
+        }}
+      >
+                {level ? (
           <div
-            className="absolute flex items-center justify-center font-iransans"
+            className="flex items-center justify-center"
             style={{
-              left: 163,
-              top: 177,
               width: 47,
               height: 14,
-              backgroundColor: "#Ff7F19",
+              backgroundColor: "#FF7F19",
               borderRadius: 19,
             }}
           >
@@ -159,36 +130,71 @@ export default function Card({
             </span>
           </div>
         ) : null}
+        {typeof rating === "number" ? (
+          <div className="flex items-center gap-1">
+            <div
+              className="relative -translate-y-[2px]"
+              style={{
+                width: STAR_W,
+                height: STAR_H,
+              }}
+            >
+              <Image
+                src={starSrc}
+                alt="ستاره"
+                fill
+                unoptimized
+                sizes={`${STAR_W}px`}
+                style={{ objectFit: "contain" }}
+              />
+            </div>
 
-        {/* Name + Age */}
-        <div
-          className="absolute w-full text-center"
-          style={{ bottom: 68, left: 0 }}
-        >
-          <div
-            style={{
-              fontFamily: "IRANSans",
-              fontSize: 18,
-              fontWeight: 800,
-              color: "#0F0F0F",
-              lineHeight: "34px",
-            }}
-          >
-            {name}
+            <span
+              style={{
+                fontSize: 12,
+                fontWeight: 600,
+                lineHeight: `${NUM_H}px`,
+                color: "#FF7F19",
+              }}
+            >
+              {rating}
+            </span>
           </div>
+        ) : null}
 
-          <div
-            style={{
-              marginTop: 6,
-              fontFamily: "IRANSans",
-              fontSize: 11,
-              fontWeight: 400,
-              color: "#0F0F0F",
-            }}
-          >
-            {ageLabel}
-          </div>
-        </div>
+
+      </div>
+    ) : null}
+
+    {/* Name + Age */}
+    <div
+      className="absolute w-full text-center"
+      style={{ bottom: 58, left: 0 }}
+    >
+      <div
+        style={{
+          fontFamily: "IRANSans",
+          fontSize: 18,
+          fontWeight: 800,
+          color: "#0F0F0F",
+          lineHeight: "34px",
+        }}
+      >
+        {name}
+      </div>
+
+      <div
+        style={{
+          marginTop: 6,
+          fontFamily: "IRANSans",
+          fontSize: 11,
+          fontWeight: 400,
+          color: "#0F0F0F",
+        }}
+      >
+        {ageLabel}
+      </div>
+    </div>
       </div>
     </div>
   );
