@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { signIn } from "next-auth/react";
-import { User, Mail, Phone, Lock } from "lucide-react";
+import { User, Mail, Phone, Lock, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -62,17 +62,21 @@ export function LoginForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showPasswordStep, setShowPasswordStep] = useState(false);
+  const [isPasswordVisible, setIsPasswordVisible] = useState(false);
   const [formData, setFormData] = useState({
     username: "",
     email: "",
     phone: "",
     password: "",
-    confirmPassword: "",
   });
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
     setError(null);
+  };
+
+  const resetPasswordVisibility = () => {
+    setIsPasswordVisible(false);
   };
 
   const handleFirstStep = () => {
@@ -116,13 +120,8 @@ export function LoginForm({
         return;
       }
 
-      if (!formData.password || !formData.confirmPassword) {
-        setError("لطفاً رمز عبور و تکرار آن را وارد کنید.");
-        return;
-      }
-
-      if (formData.password !== formData.confirmPassword) {
-        setError("رمز عبور و تکرار آن یکسان نیست.");
+      if (!formData.password) {
+        setError("لطفاً رمز عبور را وارد کنید.");
         return;
       }
 
@@ -255,12 +254,12 @@ export function LoginForm({
       setMode("register");
       setError(null);
       setShowPasswordStep(false);
+      resetPasswordVisibility();
       setFormData({
         username: "",
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
       });
     }}
     className={cn(
@@ -279,12 +278,12 @@ export function LoginForm({
       setMode("login");
       setError(null);
       setShowPasswordStep(false);
+      resetPasswordVisibility();
       setFormData({
         username: "",
         email: "",
         phone: "",
         password: "",
-        confirmPassword: "",
       });
     }}
     className={cn(
@@ -305,7 +304,7 @@ export function LoginForm({
         {/* Username Field */}
         {mode === "register" && (
           <div className="relative">
-            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+            <div className="absolute inset-y-0 left-0 z-10 flex w-12 items-center justify-center rounded-lg bg-[#8B8B8B] sm:w-14">
               <User className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
@@ -322,7 +321,7 @@ export function LoginForm({
         {/* Email Field */}
         {!showPasswordStep && (
           <div className="relative">
-            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+            <div className="absolute inset-y-0 left-0 z-10 flex w-12 items-center justify-center rounded-lg bg-[#8B8B8B] sm:w-14">
               <Mail className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
@@ -341,7 +340,7 @@ export function LoginForm({
         {/* Phone Field */}
         {mode === "register" && !showPasswordStep && (
           <div className="relative">
-            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+            <div className="absolute inset-y-0 left-0 z-10 flex w-12 items-center justify-center rounded-lg bg-[#8B8B8B] sm:w-14">
               <Phone className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
@@ -362,37 +361,35 @@ export function LoginForm({
         {showPasswordStep && (
           <>
             <div className="relative">
-              <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                <Lock className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
+              <div className="absolute inset-y-0 left-0 z-10 flex items-stretch overflow-hidden rounded-lg">
+                <button
+                  type="button"
+                  onClick={() => setIsPasswordVisible((visible) => !visible)}
+                  className="flex w-10 items-center justify-center text-[#8B8B8B] transition-colors hover:text-[#6f6f6f] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring sm:w-11"
+                  aria-label={isPasswordVisible ? "پنهان کردن رمز عبور" : "نمایش رمز عبور"}
+                  aria-pressed={isPasswordVisible}
+                >
+                  {isPasswordVisible ? (
+                    <EyeOff className="h-4 w-4 sm:h-5 sm:w-5" />
+                  ) : (
+                    <Eye className="h-4 w-4 sm:h-5 sm:w-5" />
+                  )}
+                </button>
+                <div className="flex w-12 items-center justify-center rounded-r-lg bg-[#8B8B8B] sm:w-14">
+                  <Lock className="h-5 w-5 text-foreground sm:h-5.5 sm:w-5.5" />
+                </div>
               </div>
               <Input
-                type="password"
+                type={isPasswordVisible ? "text" : "password"}
                 placeholder="رمز عبور"
                 value={formData.password}
                 onChange={(e) => handleInputChange("password", e.target.value)}
-                className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
+                className="h-10 rounded-lg border-muted bg-white/50 pl-[92px] pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pl-[104px] sm:pr-5 sm:text-base"
                 required
                 onFocus={() => onPasswordPhaseChange?.(true)}
                 onBlur={() => onPasswordPhaseChange?.(false)}
               />
             </div>
-            {mode === "register" && (
-              <div className="relative">
-                <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                  <Lock className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
-                </div>
-                <Input
-                  type="password"
-                  placeholder="تکرار رمز عبور"
-                  value={formData.confirmPassword}
-                  onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
-                  required
-                  onFocus={() => onPasswordPhaseChange?.(true)}
-                  onBlur={() => onPasswordPhaseChange?.(false)}
-                />
-              </div>
-            )}
           </>
         )}
 
@@ -410,6 +407,7 @@ export function LoginForm({
               onClick={() => {
                 setShowPasswordStep(false);
                 setError(null);
+                resetPasswordVisibility();
               }}
               className="h-10 flex-1 rounded-lg text-sm sm:h-11 sm:text-base"
             >

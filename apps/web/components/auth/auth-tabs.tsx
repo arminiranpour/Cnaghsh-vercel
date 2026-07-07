@@ -344,7 +344,7 @@ function SignUpPanel({
         return;
       }
       const activeId = document.activeElement?.id;
-      if (activeId === "signup-password" || activeId === "signup-confirm-password") {
+      if (activeId === "signup-password") {
         return;
       }
       onPasswordPhaseChange?.(false);
@@ -360,21 +360,14 @@ function SignUpPanel({
     const phoneRaw = (formData.get("phone") as string | null) ?? "";
     const phone = normalizeDigits(phoneRaw).trim();
     const password = (formData.get("password") as string | null) ?? "";
-    const confirmPassword =
-      (formData.get("confirmPassword") as string | null) ?? "";
 
-    if (!email || !password || !confirmPassword || !phone) {
+    if (!email || !password || !phone) {
       setError("تمام فیلدهای ضروری را تکمیل کنید.");
       return;
     }
 
     if (!PHONE_REGEX.test(phone)) {
       setError(PHONE_ERROR);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("رمز عبور و تکرار آن یکسان نیست.");
       return;
     }
 
@@ -525,19 +518,6 @@ function SignUpPanel({
           <p className="text-xs text-muted-foreground">
             رمز عبور باید حداقل ۸ کاراکتر باشد و ترکیبی از حروف و اعداد باشد.
           </p>
-        </div>
-        <div className="space-y-2">
-          <Label htmlFor="signup-confirm-password">تکرار رمز عبور</Label>
-          <Input
-            id="signup-confirm-password"
-            name="confirmPassword"
-            type="password"
-            autoComplete="new-password"
-            required
-            placeholder="********"
-            onFocus={() => onPasswordPhaseChange?.(true)}
-            onBlur={handlePasswordBlur}
-          />
         </div>
         <label className="flex items-center gap-2 text-sm text-muted-foreground">
           <input
