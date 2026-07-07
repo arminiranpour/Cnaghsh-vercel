@@ -1602,13 +1602,17 @@ export function PortfolioEditCenterPane({
     })),
   }));
 
-  const [degreeEntries, setDegreeEntries] = useState<DegreeEntryState[]>(() =>
-    initialValues.degrees.map((entry) => ({
+  const [degreeEntries, setDegreeEntries] = useState<DegreeEntryState[]>(() => {
+    const entries = initialValues.degrees.map((entry) => ({
       id: createId(),
       degreeLevel: entry.degreeLevel,
       major: entry.major,
-    })),
-  );
+    }));
+
+    return entries.length > 0
+      ? entries
+      : [{ id: createId(), degreeLevel: "", major: "" }];
+  });
 
   const [headshotFront, setHeadshotFront] = useState<GalleryAsset | null>(
     () => initialGallerySlots.headshotFront ?? null,
@@ -2861,7 +2865,7 @@ export function PortfolioEditCenterPane({
 
             <div className="space-y-3">
               <label className={sectionTitleClass}>رشته تحصیلی</label>
-              <div className="space-y-3">
+              <div className="space-y-[39px]">
                 {degreeEntries.map((entry) => (
                   <input
                     key={entry.id}

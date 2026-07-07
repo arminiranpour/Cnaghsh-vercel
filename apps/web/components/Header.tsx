@@ -34,11 +34,6 @@ type HeaderStyle = CSSProperties & {
 };
 
 function getHeaderConfig(pathname: string) {
-  const shouldAutoHide =
-    pathname === "/profiles" ||
-    pathname.startsWith("/profiles/") ||
-    pathname === "/dashboard/profile" ||
-    pathname.startsWith("/dashboard/profile/");
   const useWhiteHeader =
     pathname === "/" ||
     pathname.startsWith("/auth") ||
@@ -47,14 +42,16 @@ function getHeaderConfig(pathname: string) {
     pathname.startsWith("/profile/");
   const topPadding = pathname === "/" ? 100 : TOP;
 
-  return { shouldAutoHide, useWhiteHeader, topPadding };
+  return { useWhiteHeader, topPadding };
 }
 
 function useMediaQuery(query: string) {
   const [matches, setMatches] = useState(false);
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (typeof window === "undefined") {
+      return;
+    }
 
     const mediaQueryList = window.matchMedia(query);
     const handleChange = (event: MediaQueryListEvent) => {
@@ -62,6 +59,7 @@ function useMediaQuery(query: string) {
     };
 
     setMatches(mediaQueryList.matches);
+
     if (mediaQueryList.addEventListener) {
       mediaQueryList.addEventListener("change", handleChange);
       return () => mediaQueryList.removeEventListener("change", handleChange);
@@ -77,88 +75,21 @@ function useMediaQuery(query: string) {
 export default function Header({ variant = "static" }: HeaderProps) {
   // برای هاور شدن هر آیتم
   const [hovered, setHovered] = useState<string | null>(null);
-  const [isHidden, setIsHidden] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const { data: session } = useSession();
   const pathname = usePathname();
-  const { shouldAutoHide, useWhiteHeader, topPadding } = getHeaderConfig(pathname);
+  const { useWhiteHeader, topPadding } = getHeaderConfig(pathname);
   const isDesktop = useMediaQuery("(min-width: 1024px)");
 
   // فیلتر نارنجی (مثل قبل)
   const orangeFilter =
     "brightness(0) saturate(100%) invert(61%) sepia(61%) saturate(1043%) hue-rotate(351deg) brightness(98%) contrast(98%)";
 
-  useEffect(() => {
-    setIsMenuOpen(false);
-    setIsMoreOpen(false);
-  }, [pathname]);
-
-  useEffect(() => {
-    if (!isMenuOpen) {
-      setIsMoreOpen(false);
-    }
-  }, [isMenuOpen]);
-
-  useEffect(() => {
-    setIsMenuOpen(false);
-    setIsMoreOpen(false);
-  }, [isDesktop]);
-
-  useEffect(() => {
-    if (!isMenuOpen || isDesktop) return;
-
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.body.style.overflow = "";
-    };
-  }, [isMenuOpen, isDesktop]);
-
-  useEffect(() => {
-    if (!isDesktop) {
-      setIsHidden(false);
-      return;
-    }
-    if (!shouldAutoHide) {
-      setIsHidden(false);
-      return;
-    }
-
-    let rafId = 0;
-
-    const updateHidden = (event?: Event) => {
-      const target = event?.target instanceof HTMLElement ? event.target : null;
-      const windowScrolled = window.scrollY > 4;
-      const documentScrolled = (document.scrollingElement?.scrollTop ?? 0) > 4;
-      const targetScrolled = target ? target.scrollTop > 4 : false;
-      setIsHidden(windowScrolled || documentScrolled || targetScrolled);
-    };
-
-    const handleScroll = (event: Event) => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-      rafId = requestAnimationFrame(() => updateHidden(event));
-    };
-
-    updateHidden();
-
-    document.addEventListener("scroll", handleScroll, { passive: true, capture: true });
-    window.addEventListener("scroll", handleScroll, { passive: true });
-
-    return () => {
-      if (rafId) {
-        cancelAnimationFrame(rafId);
-      }
-      document.removeEventListener("scroll", handleScroll, true);
-      window.removeEventListener("scroll", handleScroll);
-    };
-  }, [pathname, shouldAutoHide, isDesktop]);
-
   return (
     <>
       <header
-        className="fixed top-0 left-0 right-0 z-[100] bg-transparent md:sticky md:left-auto md:right-auto lg:absolute lg:top-0 lg:left-0 lg:right-0 h-[var(--mobile-header-h,72px)] md:h-auto py-0 md:pt-4 md:pb-4 lg:pt-[var(--header-padding)] lg:pb-[var(--header-padding)]"
+        className="absolute left-0 right-0 top-0 z-[100] h-[var(--mobile-header-h,72px)] w-full bg-transparent py-0 md:h-auto md:pt-4 md:pb-4 lg:pt-[var(--header-padding)] lg:pb-[var(--header-padding)]"
         style={
           {
             "--header-padding": `${topPadding}px`,
@@ -167,10 +98,6 @@ export default function Header({ variant = "static" }: HeaderProps) {
             direction: "rtl",
             fontFamily: "IRANSans",
             color: useWhiteHeader ? "#fff" : "#000",
-            transform: isHidden ? "translateY(-120px)" : "translateY(0)",
-            opacity: isHidden ? 0 : 1,
-            pointerEvents: isHidden ? "none" : "auto",
-            transition: "transform 0.2s ease, opacity 0.2s ease",
           } as HeaderStyle
         }
         data-variant={variant}
