@@ -12,8 +12,10 @@ import {
 } from "@/lib/profile/enforcement";
 import {
   MODERATION_PROFILE_SELECT,
+  type ModerationProfileSnapshot,
   maybeMarkPendingOnCriticalEdit,
 } from "@/lib/profile/moderation";
+import { didProfileEditableFieldsChange } from "@/lib/profile/profile-edit-cue";
 import {
   accentsSchema,
   experienceSchema,
@@ -166,6 +168,23 @@ async function revalidateProfilePaths(profileId: string) {
   for (const path of DASHBOARD_PROFILE_PATHS) {
     revalidatePath(path);
   }
+}
+
+async function markProfileAsEditedIfNeeded({
+  previous,
+  next,
+}: {
+  previous: ModerationProfileSnapshot | null;
+  next: ModerationProfileSnapshot | null;
+}) {
+  if (!next || next.hasProfileEdits || !didProfileEditableFieldsChange(previous, next)) {
+    return;
+  }
+
+  await prisma.profile.update({
+    where: { id: next.id },
+    data: { hasProfileEdits: true },
+  });
 }
 
 function mapZodErrors(
@@ -417,6 +436,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -464,6 +484,7 @@ export async function updateSkills(formData: FormData): Promise<SkillsActionResu
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -545,6 +566,7 @@ export async function updateLanguages(formData: FormData): Promise<LanguagesActi
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -672,6 +694,7 @@ export async function updateAccents(formData: FormData): Promise<AccentsActionRe
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -728,6 +751,7 @@ export async function updateDegrees(formData: FormData): Promise<DegreesActionRe
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previous, next: result });
     await revalidateProfilePaths(result.id);
     await enforceUserProfileVisibility(userId);
@@ -798,6 +822,7 @@ export async function updateExperience(formData: FormData): Promise<ExperienceAc
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -889,6 +914,7 @@ export async function updateVideos(formData: FormData): Promise<VideosActionResu
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -971,6 +997,7 @@ export async function updateAwards(formData: FormData): Promise<AwardsActionResu
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
     await revalidateProfilePaths(profile.id);
     await enforceUserProfileVisibility(userId);
@@ -1033,6 +1060,7 @@ export async function updateVoices(formData: FormData): Promise<VoicesActionResu
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previous, next: result });
     await revalidateProfilePaths(result.id);
     await enforceUserProfileVisibility(userId);
@@ -1105,6 +1133,7 @@ export async function updateGallery(formData: FormData): Promise<GalleryActionRe
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
     await revalidateProfilePaths(result.id);
     await enforceUserProfileVisibility(userId);
@@ -1156,6 +1185,7 @@ export async function uploadImage(formData: FormData): Promise<GalleryActionResu
       select: MODERATION_PROFILE_SELECT,
     });
 
+    await markProfileAsEditedIfNeeded({ previous: previousProfile, next: result });
     await maybeMarkPendingOnCriticalEdit({ old: previousProfile, next: result });
 
     await revalidateProfilePaths(result.id);
@@ -1205,6 +1235,7 @@ export async function deleteImage(formData: FormData): Promise<GalleryActionResu
     });
 
     await deleteByUrl(url, userId);
+    await markProfileAsEditedIfNeeded({ previous: profile, next: updated });
     await maybeMarkPendingOnCriticalEdit({ old: profile, next: updated });
     await revalidateProfilePaths(updated.id);
 

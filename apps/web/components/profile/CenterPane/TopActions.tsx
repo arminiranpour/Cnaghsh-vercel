@@ -10,6 +10,7 @@ type ActionId = "share";
 
 type TopActionsProps = {
   canEdit?: boolean;
+  shouldHighlightEditButton?: boolean;
   onEditClick?: () => void;
   profileId?: string;
   initialSaved?: boolean;
@@ -42,6 +43,7 @@ const numberFormatter = new Intl.NumberFormat("fa-IR", { useGrouping: false });
 
 export function TopActions({
   canEdit,
+  shouldHighlightEditButton = false,
   onEditClick,
   profileId,
   initialSaved = false,
@@ -59,7 +61,7 @@ export function TopActions({
 
   return (
     <div
-      className="relative z-10 flex w-full items-center justify-start gap-3 px-3 pt-3 md:absolute md:left-[32px] md:top-[18px] md:h-[23px] md:w-[136px] md:px-0 md:pt-0"
+      className="relative z-10 flex w-full items-center justify-start gap-3 px-3 pt-3 md:absolute md:left-[32px] md:top-[18px] md:h-[23px] md:w-auto md:px-0 md:pt-0"
       style={{
         direction: "ltr",
       }}
@@ -131,13 +133,15 @@ export function TopActions({
           transition: "color 0.15s ease",
         }}
       >
-        <svg width="38" height="38" viewBox="0 0 24 24" fill="none">
-          <path
-            d="M12 21s-6.7-4.35-9.33-8.7C.33 9.36 2.08 5 6 5c2.2 0 3.67 1.33 4.5 2.67C11.33 6.33 12.8 5 15 5c3.92 0 5.67 4.36 3.33 7.3C18.7 16.65 12 21 12 21z"
-            stroke="currentColor"
-            strokeWidth="2"
-            fill={saved ? "currentColor" : "none"}
-          />
+        <svg width="34" height="34" viewBox="0 0 90 90" fill="none">
+          <g transform="translate(3 3) scale(0.955)">
+            <path
+              d="M45 84.334 6.802 46.136C2.416 41.75 0 35.918 0 29.716c0-6.203 2.416-12.034 6.802-16.42 4.386-4.386 10.217-6.802 16.42-6.802 6.203 0 12.034 2.416 16.42 6.802L45 18.654l5.358-5.358c4.386-4.386 10.218-6.802 16.42-6.802 6.203 0 12.034 2.416 16.42 6.802C87.585 17.682 90 23.513 90 29.716c0 6.203-2.415 12.034-6.802 16.42L45 84.334ZM23.222 10.494c-5.134 0-9.961 2-13.592 5.63S4 24.582 4 29.716s2 9.961 5.63 13.592L45 78.678l35.37-35.37C84.001 39.677 86 34.85 86 29.716s-1.999-9.961-5.63-13.592c-3.631-3.63-8.457-5.63-13.592-5.63-5.134 0-9.961 2-13.592 5.63L45 24.311l-8.187-8.187c-3.63-3.63-8.457-5.63-13.591-5.63Z"
+              fill={saved ? "currentColor" : "none"}
+              stroke="currentColor"
+              strokeWidth={saved ? "0" : "4"}
+            />
+          </g>
         </svg>
       </button>
 
@@ -152,29 +156,65 @@ export function TopActions({
       </span>
 
       {canEdit ? (
-        <button
-          type="button"
-          onClick={() => onEditClick?.()}
-          style={{
-            width: 25,
-            height: 25,
-            padding: 0,
-            margin: 0,
-            border: "none",
-            backgroundColor: "transparent",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            cursor: "pointer",
-          }}
-        >
-          <Image
-            src="/cineflash/profile/edit.png"
-            alt="ویرایش پروفایل"
-            width={16}
-            height={16}
-          />
-        </button>
+        <>
+          <button
+            type="button"
+            onClick={() => onEditClick?.()}
+            className={shouldHighlightEditButton ? "profile-edit-cta-pulse" : undefined}
+            style={{
+              width: 34,
+              height: 34,
+              padding: 0,
+              margin: 0,
+              border: "none",
+              borderRadius: 999,
+              backgroundColor: shouldHighlightEditButton ? ORANGE : "transparent",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              cursor: "pointer",
+            }}
+          >
+            <Image
+              src="/cineflash/profile/edit.png"
+              alt="ویرایش پروفایل"
+              width={16}
+              height={16}
+              className={shouldHighlightEditButton ? "profile-edit-cta-icon-pulse" : undefined}
+            />
+          </button>
+          <style jsx>{`
+            @keyframes profileEditCtaPulse {
+              0%,
+              100% {
+                background-color: #f58a1f;
+              }
+              50% {
+                background-color: #ffffff;
+              }
+            }
+
+            @keyframes profileEditIconPulse {
+              0%,
+              100% {
+                filter: brightness(0) invert(1);
+              }
+              50% {
+                filter: brightness(0) saturate(100%) invert(56%) sepia(82%) saturate(1565%)
+                  hue-rotate(350deg) brightness(99%) contrast(93%);
+              }
+            }
+
+            .profile-edit-cta-pulse {
+              animation: profileEditCtaPulse 1.2s ease-in-out infinite;
+              box-shadow: 0 0 0 1px rgba(245, 138, 31, 0.22);
+            }
+
+            .profile-edit-cta-icon-pulse {
+              animation: profileEditIconPulse 1.2s ease-in-out infinite;
+            }
+          `}</style>
+        </>
       ) : null}
     </div>
   );

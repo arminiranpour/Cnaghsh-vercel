@@ -1,0 +1,2 @@
+ALTER TABLE "Profile"
+ADD COLUMN "hasProfileEdits" BOOLEAN NOT NULL DEFAULT false;

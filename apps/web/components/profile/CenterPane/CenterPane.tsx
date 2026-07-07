@@ -16,6 +16,7 @@ type CenterPaneProps = {
   profile: PublicProfileData;
   children?: ReactNode;
   canEdit?: boolean;
+  shouldHighlightEditButton?: boolean;
   onEditClick?: () => void;
 };
 
@@ -24,6 +25,7 @@ export function CenterPane({
   profile,
   children,
   canEdit,
+  shouldHighlightEditButton,
   onEditClick,
 }: CenterPaneProps) {
   return (
@@ -45,6 +47,7 @@ export function CenterPane({
     >
       <TopActions
         canEdit={canEdit}
+        shouldHighlightEditButton={shouldHighlightEditButton}
         onEditClick={onEditClick}
         profileId={profile.id}
         initialSaved={profile.isSavedByMe}

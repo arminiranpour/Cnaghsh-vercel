@@ -25,6 +25,7 @@ import {
   normalizeSkillKeys,
   type PortfolioEditInitialValues,
 } from "@/lib/profile/portfolio-edit";
+import { shouldHighlightEditProfileIcon } from "@/lib/profile/profile-edit-cue";
 import { validateReadyToPublish } from "@/lib/profile/validation";
 
 import { DashboardProfileClient } from "./_components/dashboard-profile-client";
@@ -256,6 +257,7 @@ export default async function DashboardProfilePage() {
       ? []
       : Array.from(new Set(publishValidation.error.issues.map((issue) => issue.message))),
   };
+  const shouldHighlightEditIcon = shouldHighlightEditProfileIcon(profile);
 
   const isOwner = session.user.id === profileData.userId;
   const profileDataWithSaved = {
@@ -317,6 +319,7 @@ export default async function DashboardProfilePage() {
           registeredChallenges={registeredChallenges}
           savedSummary={savedSummary}
           publishSettings={publishSettings}
+          shouldHighlightEditIcon={shouldHighlightEditIcon}
         />
       </ProfilePageLayout>
     </div>

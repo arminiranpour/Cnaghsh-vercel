@@ -82,6 +82,7 @@ model Profile {
   voices            Json?
   awards            ProfileAward[]
   socialLinks       Json?
+  hasProfileEdits   Boolean           @default(false)
   visibility        ProfileVisibility @default(PRIVATE)
   publishedAt       DateTime?
   createdAt         DateTime          @default(now())

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import type { ProfileTabId, PublicProfileData } from "@/components/profile/ProfilePageClient";
 import { CenterPane } from "@/components/profile/CenterPane/CenterPane";
@@ -57,6 +57,7 @@ type DashboardProfileClientProps = {
     isPublished: boolean;
     readinessIssues: string[];
   };
+  shouldHighlightEditIcon: boolean;
 };
 
 const paymentStatusLabels: Record<string, string> = {
@@ -78,11 +79,17 @@ export function DashboardProfileClient({
   registeredChallenges,
   savedSummary,
   publishSettings,
+  shouldHighlightEditIcon,
 }: DashboardProfileClientProps) {
   const [activeTab, setActiveTab] = useState<ProfileTabId>("personal");
   const [isEditingPortfolio, setIsEditingPortfolio] = useState(false);
   const [activeEditTab, setActiveEditTab] = useState<EditProfileTabId>("portfolio");
+  const [showEditIconPulse, setShowEditIconPulse] = useState(shouldHighlightEditIcon);
   const canEdit = Boolean(isOwner);
+
+  useEffect(() => {
+    setShowEditIconPulse(shouldHighlightEditIcon);
+  }, [shouldHighlightEditIcon]);
 
   const subscriptionSummary = useMemo(() => {
     const subscription = billingData.subscription;
@@ -139,7 +146,10 @@ export function DashboardProfileClient({
             cities={cities}
             provinces={provinces}
             onCancel={exitEditMode}
-            onSaved={exitEditMode}
+            onSaved={() => {
+              setShowEditIconPulse(false);
+              exitEditMode();
+            }}
           />
         )}
         <EditProfileRightRail
@@ -157,6 +167,7 @@ export function DashboardProfileClient({
         activeTab={activeTab}
         profile={profile}
         canEdit={canEdit}
+        shouldHighlightEditButton={showEditIconPulse}
         onEditClick={() => {
           setActiveEditTab("portfolio");
           setIsEditingPortfolio(true);

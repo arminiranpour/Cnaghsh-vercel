@@ -22,6 +22,8 @@ export const MODERATION_PROFILE_SELECT = {
   firstName: true,
   lastName: true,
   stageName: true,
+  age: true,
+  birthDate: true,
   bio: true,
   avatarUrl: true,
   cityId: true,
@@ -35,6 +37,10 @@ export const MODERATION_PROFILE_SELECT = {
   degrees: true,
   voices: true,
   awards: {
+    orderBy: [
+      { awardDate: "desc" },
+      { createdAt: "desc" },
+    ],
     select: {
       id: true,
       title: true,
@@ -45,6 +51,7 @@ export const MODERATION_PROFILE_SELECT = {
   },
   videos: true,
   introVideoMediaId: true,
+  hasProfileEdits: true,
   visibility: true,
   moderationStatus: true,
   moderationNotes: true,
