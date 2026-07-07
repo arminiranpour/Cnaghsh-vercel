@@ -215,9 +215,10 @@ export default async function MoviesPage({ searchParams }: { searchParams: Searc
   }));
 
   return (
-    <div className="relative w-full" dir="rtl">
+    <div className="relative min-h-[100svh] w-full overflow-x-hidden" dir="rtl">
       <div
-        className="absolute inset-0 bg-[url('/profiles/concretewall-bg.png')] bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 -z-10 bg-[url('/profiles/concretewall-bg.png')] bg-cover bg-center bg-no-repeat"
+        aria-hidden="true"
       />
 
       <div className="relative mx-auto w-full max-w-6xl px-4 py-10">

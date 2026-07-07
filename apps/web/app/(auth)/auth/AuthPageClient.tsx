@@ -15,8 +15,8 @@ export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps)
   const [isPasswordPhase, setIsPasswordPhase] = useState(false);
 
   return (
-    <div className="relative flex items-center justify-center min-h-screen">
-      <div className="relative w-full max-w-[1600px] h-[800px] max-h-[90vh]">
+    <div className="relative flex min-h-screen w-full items-center justify-center">
+      <div className="relative w-full max-w-[1600px] min-h-[560px] lg:h-[800px] lg:max-h-[90vh]">
         <div
           className="
             absolute
@@ -28,11 +28,11 @@ export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps)
         />
 
         <div
-          className="relative flex items-center justify-center w-full h-full gap-12 p-8 md:flex-row"
+          className="relative flex h-full w-full flex-col items-center justify-center gap-8 p-5 sm:p-8 lg:flex-row lg:gap-12"
           dir="ltr"
         >
           {/* RIGHT SIDE: Auth Panel (back to RTL) */}
-          <div className="w-full h-full max-h-[647px] max-w-[564px]">
+          <div className="w-full max-w-[564px] lg:h-full lg:max-h-[647px]">
             <LoginForm
               initialTab={initialTab}
               callbackUrl={callbackUrl}
@@ -40,7 +40,7 @@ export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps)
             />
           </div>
           {/* LEFT SIDE: Character */}
-          <div className="flex w-full h-full justify-center md:w-auto -translate-x-4">
+          <div className="hidden h-full w-full justify-center lg:flex lg:w-auto lg:-translate-x-4">
             <LoginCharacter isPasswordPhase={isPasswordPhase} />
           </div>
         </div>

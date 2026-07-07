@@ -236,19 +236,19 @@ export function LoginForm({
   };
 
   return (
-    <div className="w-full h-full max-h-[647px] max-w-[564px]" dir="rtl">
-        <div
-        className="bg-white rounded-[22px] w-[564px] h-full p-10 shadow-[0_4px_30px_rgba(0,0,0,0.1)] flex flex-col justify-center"
-  >
+    <div className="h-full w-full max-w-[564px]" dir="rtl">
+      <div
+        className="flex h-full max-h-[647px] w-full flex-col justify-center rounded-[22px] bg-white p-5 shadow-[0_4px_30px_rgba(0,0,0,0.1)] sm:p-6 lg:p-10"
+      >
       {/* Welcome Message */}
-      <div className="text-center space-y-2 mb-3">
-        <h1 className="text-3xl font-bold text-black">خــوش آمـدیـد!</h1>
-        <p className="text-lr text-black">
+      <div className="mb-3 space-y-1.5 text-center sm:space-y-2">
+        <h1 className="text-2xl font-bold text-black sm:text-3xl">خــوش آمـدیـد!</h1>
+        <p className="text-sm text-black sm:text-base">
           لطفا اطلاعات خودتون رو وارد کنید.
         </p>
       </div>
 {/* Toggle Switch */}
-<div className="relative bg-[#D9D9D9] rounded-full p-2 flex gap-2 mb-4">
+<div className="relative mb-4 flex gap-2 rounded-full bg-[#D9D9D9] p-1.5 sm:p-2">
   <button
     type="button"
     onClick={() => {
@@ -264,7 +264,7 @@ export function LoginForm({
       });
     }}
     className={cn(
-      "flex-1 rounded-full px-6 py-3 text-base font-semibold transition-colors duration-200",
+      "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200 sm:px-6 sm:py-3 sm:text-base",
       mode === "register"
         ? "bg-black text-white"
         : "bg-transparent text-black"
@@ -288,7 +288,7 @@ export function LoginForm({
       });
     }}
     className={cn(
-      "flex-1 rounded-full px-6 py-3 text-base font-semibold transition-colors duration-200",
+      "flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors duration-200 sm:px-6 sm:py-3 sm:text-base",
       mode === "login"
         ? "bg-black text-white"
         : "bg-transparent text-black"
@@ -301,21 +301,19 @@ export function LoginForm({
 
 
       {/* Form */}
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
         {/* Username Field */}
         {mode === "register" && (
           <div className="relative">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-              <div className="bg-[#8B8B8B] rounded-md p-2 flex items-center justify-center">
-                <User className="h-5.5 w-10 text-foreground" />
-              </div>
+            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+              <User className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
               type="text"
               placeholder="نام کاربری"
               value={formData.username}
               onChange={(e) => handleInputChange("username", e.target.value)}
-              className="pr-5 bg-white/50 border-muted rounded-lg text-black placeholder:text-gray-400"
+              className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
               required={mode === "register"}
             />
           </div>
@@ -324,17 +322,15 @@ export function LoginForm({
         {/* Email Field */}
         {!showPasswordStep && (
           <div className="relative">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-              <div className="bg-[#8B8B8B] rounded-md p-2 flex items-center justify-center">
-                <Mail className="h-5.5 w-10 text-foreground" />
-              </div>
+            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+              <Mail className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
               type="email"
               placeholder="ایمیل"
               value={formData.email}
               onChange={(e) => handleInputChange("email", e.target.value)}
-              className="pr-5 bg-white/50 border-muted rounded-lg text-black placeholder:text-gray-400"
+              className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
               dir="trl"
               required
 
@@ -345,17 +341,15 @@ export function LoginForm({
         {/* Phone Field */}
         {mode === "register" && !showPasswordStep && (
           <div className="relative">
-            <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-              <div className="bg-[#8B8B8B] rounded-md p-2 flex items-center justify-center">
-                <Phone className="h-5.5 w-10 text-foreground" />
-              </div>
+            <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+              <Phone className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
             </div>
             <Input
               type="tel"
               placeholder="شماره تلفن"
               value={formData.phone}
               onChange={(e) => handleInputChange("phone", e.target.value)}
-              className="pr-5 bg-white/50 border-muted rounded-lg text-black placeholder:text-gray-400"
+              className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
               dir="rtl"
               inputMode="numeric"
               autoComplete="tel"
@@ -368,17 +362,15 @@ export function LoginForm({
         {showPasswordStep && (
           <>
             <div className="relative">
-              <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                <div className="bg-[#8B8B8B] rounded-md p-2 flex items-center justify-center">
-                  <Lock className="h-5.5 w-10 text-foreground" />
-                </div>
+              <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                <Lock className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
               </div>
               <Input
                 type="password"
                 placeholder="رمز عبور"
                 value={formData.password}
                 onChange={(e) => handleInputChange("password", e.target.value)}
-                className="pr-5 bg-white/50 border-muted rounded-lg text-black placeholder:text-gray-400"
+                className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
                 required
                 onFocus={() => onPasswordPhaseChange?.(true)}
                 onBlur={() => onPasswordPhaseChange?.(false)}
@@ -386,17 +378,15 @@ export function LoginForm({
             </div>
             {mode === "register" && (
               <div className="relative">
-                <div className="absolute left-0 top-1/2 -translate-y-1/2 z-10">
-                  <div className="bg-[#8B8B8B] rounded-md p-2 flex items-center justify-center">
-                    <Lock className="h-5.5 w-10 text-foreground" />
-                  </div>
+                <div className="flex items-center justify-center rounded-md bg-[#8B8B8B] p-1.5 sm:p-2 absolute left-0 top-1/2 -translate-y-1/2 z-10">
+                  <Lock className="h-5 w-8 text-foreground sm:h-5.5 sm:w-10" />
                 </div>
                 <Input
                   type="password"
                   placeholder="تکرار رمز عبور"
                   value={formData.confirmPassword}
                   onChange={(e) => handleInputChange("confirmPassword", e.target.value)}
-                  className="pr-5 bg-white/50 border-muted rounded-lg text-black placeholder:text-gray-400"
+                  className="h-10 rounded-lg border-muted bg-white/50 pr-4 text-sm text-black placeholder:text-gray-400 sm:h-11 sm:pr-5 sm:text-base"
                   required
                   onFocus={() => onPasswordPhaseChange?.(true)}
                   onBlur={() => onPasswordPhaseChange?.(false)}
@@ -408,7 +398,7 @@ export function LoginForm({
 
         {/* Error Message */}
         {error && (
-          <div className="text-sm text-destructive text-center">{error}</div>
+          <div className="text-center text-xs text-destructive sm:text-sm">{error}</div>
         )}
 
         {/* Continue Button */}
@@ -421,14 +411,14 @@ export function LoginForm({
                 setShowPasswordStep(false);
                 setError(null);
               }}
-              className="flex-1 rounded-lg"
+              className="h-10 flex-1 rounded-lg text-sm sm:h-11 sm:text-base"
             >
               بازگشت
             </Button>
           )}
           <Button
             type="submit"
-            className="flex-1 bg-orange-500 hover:bg-orange-600 text-white rounded-lg h-11 text-base font-medium"
+            className="h-10 flex-1 rounded-lg bg-orange-500 text-sm font-medium text-white hover:bg-orange-600 sm:h-11 sm:text-base"
             disabled={isSubmitting}
           >
             {isSubmitting
@@ -443,17 +433,17 @@ export function LoginForm({
       </form>
 
 {/* Google Sign In */}
-<div dir="ltr" className="flex justify-end mt-8">
+<div dir="ltr" className="mt-5 flex justify-end sm:mt-8">
   <button
     type="button"
     onClick={handleGoogleSignIn}
     disabled={isSubmitting}
-    className="flex flex-row-reverse items-center justify-between w-full max-w-[400px] mx-auto text-sm text-black hover:text-gray-800 transition disabled:opacity-50"
+    className="mx-auto flex w-full max-w-[400px] flex-row-reverse items-center justify-between text-xs text-black transition hover:text-gray-800 disabled:opacity-50 sm:text-sm"
   >
 
     <span dir="rtl" className="whitespace-nowrap">بــا اکـانـت گـوگـل وارد شـویـد.</span>
 <svg
-  className="h-8 w-8 text-black"
+  className="h-7 w-7 text-black sm:h-8 sm:w-8"
   viewBox="0 0 24 24"
   fill="currentColor"
   xmlns="http://www.w3.org/2000/svg"
