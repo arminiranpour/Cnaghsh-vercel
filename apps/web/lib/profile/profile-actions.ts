@@ -28,7 +28,11 @@ import {
   voicesSchema,
   skillsSchema,
 } from "@/lib/profile/validation";
-import { deleteByUrl, saveImageFromFormData } from "@/lib/media/storage";
+import {
+  deleteByUrl,
+  isMediaStorageError,
+  saveImageFromFormData,
+} from "@/lib/media/storage";
 import {
   emitUserPublishSubmitted,
   emitUserUnpublished,
@@ -267,6 +271,14 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
     }
 
     let uploadedAvatarUrl: string | null = null;
+    const cleanupUploadedAvatar = async () => {
+      if (!uploadedAvatarUrl) {
+        return;
+      }
+
+      await deleteByUrl(uploadedAvatarUrl, userId).catch(() => undefined);
+      uploadedAvatarUrl = null;
+    };
 
     if (avatarFile instanceof File && avatarFile.size > 0) {
       const uploadForm = new FormData();
@@ -281,9 +293,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
     const parsed = validationSchema.safeParse(baseValues);
 
     if (!parsed.success) {
-      if (uploadedAvatarUrl) {
-        await deleteByUrl(uploadedAvatarUrl, userId);
-      }
+      await cleanupUploadedAvatar();
       return {
         ok: false,
         fieldErrors: mapZodErrors(parsed.error),
@@ -298,6 +308,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
       if (data.birthDate && data.birthDate.trim()) {
         const parts = data.birthDate.split("-").map((value) => Number(value));
         if (parts.length !== 3 || parts.some((value) => Number.isNaN(value))) {
+          await cleanupUploadedAvatar();
           return {
             ok: false,
             fieldErrors: { birthDate: "تاریخ تولد معتبر نیست." },
@@ -308,6 +319,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
         const parsedDate = new Date(Date.UTC(year, month - 1, day));
 
         if (Number.isNaN(parsedDate.getTime())) {
+          await cleanupUploadedAvatar();
           return {
             ok: false,
             fieldErrors: { birthDate: "تاریخ تولد معتبر نیست." },
@@ -316,6 +328,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
 
         const today = new Date();
         if (parsedDate > today) {
+          await cleanupUploadedAvatar();
           return {
             ok: false,
             fieldErrors: { birthDate: "تاریخ تولد معتبر نیست." },
@@ -340,6 +353,7 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
       if (data.introVideoMediaId && data.introVideoMediaId.trim()) {
         const validation = await validateOwnedReadyVideo(userId, data.introVideoMediaId);
         if (!validation.ok) {
+          await cleanupUploadedAvatar();
           return {
             ok: false,
             fieldErrors: { introVideoMediaId: validation.error },
@@ -449,6 +463,9 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
   } catch (error) {
     if (error instanceof Error && error.message === AUTH_ERROR) {
       return { ok: false, error: AUTH_ERROR };
+    }
+    if (isMediaStorageError(error)) {
+      return { ok: false, error: error.message };
     }
 
     console.error("upsertPersonalInfo", error);
@@ -1195,6 +1212,9 @@ export async function uploadImage(formData: FormData): Promise<GalleryActionResu
     if (error instanceof Error && error.message === AUTH_ERROR) {
       return { ok: false, error: AUTH_ERROR };
     }
+    if (isMediaStorageError(error)) {
+      return { ok: false, error: error.message };
+    }
 
     console.error("uploadImage", error);
     return { ok: false, error: GENERIC_ERROR };
@@ -1243,6 +1263,9 @@ export async function deleteImage(formData: FormData): Promise<GalleryActionResu
   } catch (error) {
     if (error instanceof Error && error.message === AUTH_ERROR) {
       return { ok: false, error: AUTH_ERROR };
+    }
+    if (isMediaStorageError(error)) {
+      return { ok: false, error: error.message };
     }
 
     console.error("deleteImage", error);

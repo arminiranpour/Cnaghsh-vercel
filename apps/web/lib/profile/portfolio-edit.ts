@@ -1,7 +1,7 @@
 import type { Prisma } from "@prisma/client";
 
 import { normalizeLanguageSkills, type LanguageSkill } from "@/lib/profile/languages";
-import { SKILLS, type SkillKey } from "@/lib/profile/skills";
+import { getSkillIdentity, resolveSkillValue } from "@/lib/profile/skills";
 
 export type AccentEntry = {
   title: string;
@@ -74,7 +74,7 @@ export type PortfolioEditInitialValues = {
   birthDate: string;
   cityId: string;
   bio: string;
-  skills: SkillKey[];
+  skills: string[];
   languages: LanguageSkill[];
   accents: AccentEntry[];
   voices?: VoiceEntry[];
@@ -99,18 +99,27 @@ export type PortfolioEditInitialValues = {
   gallery: GalleryImageEntry[];
 };
 
-export function normalizeSkillKeys(raw: Prisma.JsonValue | null | undefined): SkillKey[] {
+export function normalizeSkillKeys(raw: Prisma.JsonValue | null | undefined): string[] {
   if (!Array.isArray(raw)) {
     return [];
   }
 
-  const allowed = new Set(SKILLS.map((skill) => skill.key));
-  const result: SkillKey[] = [];
+  const result: string[] = [];
+  const seen = new Set<string>();
 
   for (const entry of raw) {
-    if (typeof entry === "string" && allowed.has(entry as SkillKey)) {
-      result.push(entry as SkillKey);
+    if (typeof entry !== "string") {
+      continue;
     }
+
+    const value = resolveSkillValue(entry);
+    const identity = getSkillIdentity(value);
+    if (!value || seen.has(identity)) {
+      continue;
+    }
+
+    seen.add(identity);
+    result.push(value);
   }
 
   return result;

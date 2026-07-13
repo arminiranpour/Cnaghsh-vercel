@@ -23,7 +23,13 @@ import type { WaveformAudioPlayerHandle } from "@/components/ui/WaveformAudioPla
 import { useToast } from "@/components/ui/use-toast";
 import type { City } from "@/lib/location/cities";
 import { LANGUAGE_LEVEL_MAX, type LanguageSkill } from "@/lib/profile/languages";
-import { SKILLS, type SkillKey } from "@/lib/profile/skills";
+import {
+  SKILLS,
+  getSkillIdentity,
+  getSkillLabel,
+  normalizeSkillText,
+  resolveSkillValue,
+} from "@/lib/profile/skills";
 import type { UploadErrorResponse, UploadInitResponse } from "@/lib/media/types";
 import type {
   AccentEntry,
@@ -90,7 +96,7 @@ type AccentEntryState = {
 
 type SkillEntryState = {
   id: string;
-  value: SkillKey | "";
+  value: string;
 };
 
 type VideoEntryState = {
@@ -1309,6 +1315,217 @@ function GalleryImageSlot({
   );
 }
 
+type SkillComboboxProps = {
+  value: string;
+  onChange: (value: string) => void;
+  disabled?: boolean;
+  inputClass: string;
+  selectClass?: string;
+};
+
+function SkillCombobox({
+  value,
+  onChange,
+  disabled,
+  inputClass,
+  selectClass,
+}: SkillComboboxProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(() => getSkillLabel(value));
+  const [searchValue, setSearchValue] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    setInputValue(getSkillLabel(value));
+  }, [value]);
+
+  const filteredSkills = useMemo(() => {
+    const query = normalizeSkillText(searchValue);
+    if (!query) {
+      return SKILLS;
+    }
+
+    return SKILLS.filter((skill) => normalizeSkillText(skill.label).includes(query));
+  }, [searchValue]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    setHighlightedIndex(filteredSkills.length > 0 ? 0 : -1);
+  }, [filteredSkills.length, isOpen]);
+
+  const commitValue = useCallback(
+    (nextValue?: string) => {
+      const resolved = resolveSkillValue(nextValue ?? inputValue);
+      onChange(resolved);
+      setInputValue(getSkillLabel(resolved));
+      setSearchValue("");
+    },
+    [inputValue, onChange],
+  );
+
+  const selectSkill = useCallback(
+    (skillKey: string) => {
+      onChange(skillKey);
+      setInputValue(getSkillLabel(skillKey));
+      setSearchValue("");
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    },
+    [onChange],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (containerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      commitValue();
+      setSearchValue("");
+      setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [commitValue, isOpen]);
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={(event) => {
+          setInputValue(event.target.value);
+          setSearchValue(event.target.value);
+          onChange(event.target.value);
+          if (!isOpen) {
+            setIsOpen(true);
+          }
+        }}
+        onFocus={() => {
+          setSearchValue("");
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          window.setTimeout(() => {
+            if (containerRef.current?.contains(document.activeElement)) {
+              return;
+            }
+
+            commitValue();
+            setSearchValue("");
+            setIsOpen(false);
+          }, 0);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              filteredSkills.length === 0 ? -1 : Math.min(prev + 1, filteredSkills.length - 1),
+            );
+            return;
+          }
+
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              filteredSkills.length === 0 ? -1 : Math.max(prev - 1, 0),
+            );
+            return;
+          }
+
+          if (event.key === "Enter") {
+            if (isOpen && highlightedIndex >= 0 && filteredSkills[highlightedIndex]) {
+              event.preventDefault();
+              selectSkill(filteredSkills[highlightedIndex].key);
+              return;
+            }
+
+            commitValue();
+            setIsOpen(false);
+            return;
+          }
+
+          if (event.key === "Escape") {
+            setInputValue(getSkillLabel(value));
+            setSearchValue("");
+            setIsOpen(false);
+          }
+        }}
+        disabled={disabled}
+        placeholder="عنوان"
+        autoComplete="off"
+        className={`${inputClass} w-full pl-10`}
+      />
+
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) {
+            return;
+          }
+
+          if (isOpen) {
+            commitValue();
+            setSearchValue("");
+            setIsOpen(false);
+          } else {
+            setSearchValue("");
+            setIsOpen(true);
+          }
+          inputRef.current?.focus();
+        }}
+        disabled={disabled}
+        aria-label="باز کردن فهرست مهارت‌ها"
+        className="absolute left-3 top-1/2 -translate-y-1/2"
+      >
+        <img src="/images/flash-down.png" alt="" className="h-3 w-3" />
+      </button>
+
+      {isOpen ? (
+        <div
+          className={`absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-48 overflow-y-auto rounded-[18px] border border-[#E1E1E1] bg-white py-1 shadow-[0_10px_24px_rgba(0,0,0,0.10)] ${
+            selectClass ?? ""
+          }`}
+        >
+          {filteredSkills.length > 0 ? (
+            filteredSkills.map((skill, index) => (
+              <button
+                key={skill.key}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectSkill(skill.key)}
+                className={`flex w-full items-center justify-between px-4 py-2 text-right text-[12px] text-[#5C5A5A] ${
+                  highlightedIndex === index ? "bg-[#FFF4EC] text-[#FF7F19]" : "hover:bg-[#F7F7F7]"
+                }`}
+              >
+                <span>{skill.label}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-right text-[12px] text-[#8B8B8B]">
+              موردی پیدا نشد. همین متن به عنوان مهارت ذخیره می‌شود.
+            </div>
+          )}
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
 
 function EditProfileGalleryPane({
   headshotFront,
@@ -1699,7 +1916,7 @@ export function PortfolioEditCenterPane({
     setSkills((prev) => prev.filter((entry) => entry.id !== id));
   };
 
-  const updateSkillEntry = (id: string, value: SkillKey | "") => {
+  const updateSkillEntry = (id: string, value: string) => {
     setSkills((prev) =>
       prev.map((entry) => (entry.id === id ? { ...entry, value } : entry)),
     );
@@ -2463,21 +2680,23 @@ export function PortfolioEditCenterPane({
       });
     }
 
-    const cleanedSkills: SkillKey[] = [];
-    const seenSkills = new Set<SkillKey>();
+    const cleanedSkills: string[] = [];
+    const seenSkills = new Set<string>();
 
     for (const entry of skills) {
-      if (!entry.value) {
+      const value = resolveSkillValue(entry.value);
+      if (!value) {
         continue;
       }
 
-      if (seenSkills.has(entry.value)) {
+      const identity = getSkillIdentity(value);
+      if (seenSkills.has(identity)) {
         setFormError("نام مهارت‌ها باید یکتا باشد.");
         return;
       }
 
-      seenSkills.add(entry.value);
-      cleanedSkills.push(entry.value);
+      seenSkills.add(identity);
+      cleanedSkills.push(value);
     }
 
     const cleanedResume: ResumeEntry[] = resumeEntries
@@ -2959,28 +3178,12 @@ export function PortfolioEditCenterPane({
                 <div className="space-y-3">
                   {skills.map((entry) => (
                     <div key={entry.id} className="flex items-center gap-3">
-                      <div className="relative flex-1">
-                        <img
-                          src="/images/flash-down.png"
-                          alt=""
-                          className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                        />
-                        <select
-                          className={`${selectClass} w-full pl-8`}
-                          value={entry.value}
-                          onChange={(event) =>
-                            updateSkillEntry(entry.id, event.target.value as SkillKey | "")
-                          }
-                          disabled={isBusy}
-                        >
-                          <option value="">عنوان</option>
-                          {SKILLS.map((skill) => (
-                            <option key={skill.key} value={skill.key}>
-                              {skill.label}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      <SkillCombobox
+                        value={entry.value}
+                        onChange={(value) => updateSkillEntry(entry.id, value)}
+                        disabled={isBusy}
+                        inputClass={inputClass}
+                      />
                       <button
                         type="button"
                         onClick={() => handleRemoveSkill(entry.id)}

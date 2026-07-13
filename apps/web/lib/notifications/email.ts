@@ -1,13 +1,10 @@
-import nodemailer, { type Transporter } from "nodemailer";
+import { Resend } from "resend";
 
 import { prisma } from "@/lib/prisma";
 import { buildAbsoluteUrl } from "@/lib/url";
 
 const {
-  SMTP_HOST,
-  SMTP_PORT,
-  SMTP_USER,
-  SMTP_PASS,
+  RESEND_API_KEY,
   MAIL_FROM,
   NEXTAUTH_URL,
   BASE_URL,
@@ -64,13 +61,19 @@ function getBaseUrl(): string {
 
 export function isEmailConfigured(): boolean {
   return Boolean(
-    SMTP_HOST &&
-      SMTP_HOST.length > 0 &&
-      SMTP_PORT &&
-      SMTP_PORT.length > 0 &&
+    RESEND_API_KEY &&
+      RESEND_API_KEY.length > 0 &&
       MAIL_FROM &&
       MAIL_FROM.length > 0,
   );
+}
+
+function getResendClient(): Resend {
+  if (!RESEND_API_KEY) {
+    throw new Error("[email] RESEND_API_KEY is required");
+  }
+
+  return new Resend(RESEND_API_KEY);
 }
 
 function escapeHtml(value: string): string {
@@ -82,25 +85,6 @@ function escapeHtml(value: string): string {
     .replace(/'/g, "&#39;");
 }
 
-function parsePort(): number {
-  const parsed = Number(SMTP_PORT ?? 0);
-  return Number.isFinite(parsed) && parsed > 0 ? parsed : 587;
-}
-
-async function getTransport(): Promise<Transporter> {
-  return nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: parsePort(),
-    secure: parsePort() === 465,
-    auth:
-      SMTP_USER && SMTP_PASS
-        ? {
-            user: SMTP_USER,
-            pass: SMTP_PASS,
-          }
-        : undefined,
-  });
-}
 
 function toneToColor(tone: EmailTone | undefined): { background: string; border: string } {
   switch (tone) {
@@ -270,12 +254,12 @@ export async function sendEmail({
           to: to ?? "",
           subject: content.subject,
           status: "FAILED",
-          error: "SMTP_NOT_CONFIGURED",
+          error: "RESEND_NOT_CONFIGURED",
         },
       });
     }
 
-    return { ok: false, error: "SMTP_NOT_CONFIGURED" };
+    return { ok: false, error: "RESEND_NOT_CONFIGURED" };
   }
 
   let recipient = to ?? null;
@@ -305,21 +289,22 @@ export async function sendEmail({
     return { ok: false, error: "RECIPIENT_NOT_FOUND" };
   }
 
-  const transporter = await getTransport();
   const html = renderEmail(content);
 
   try {
-    const info = await transporter.sendMail({
-      from: MAIL_FROM,
-      to: recipient,
+    const resend = getResendClient();
+    const { data, error } = await resend.emails.send({
+      from: MAIL_FROM as string,
+      to: [recipient],
       subject: content.subject,
       html,
-    }) as { messageId?: string } | string | unknown;
+    });
 
-    const messageId =
-      typeof info === "object" && info !== null && "messageId" in info
-        ? (info as { messageId?: string }).messageId
-        : undefined;
+    if (error) {
+      throw new Error(error.message || "RESEND_SEND_FAILED");
+    }
+
+    const messageId = data?.id;
 
     if (userId) {
       await prisma.emailLog.create({

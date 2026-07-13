@@ -15,8 +15,8 @@ process.env.DATABASE_URL ??=
   "postgresql://user:pass@localhost:5432/testdb?schema=public";
 
 // Quiet mail in tests
-process.env.SMTP_HOST ??= "localhost";
-process.env.SMTP_PORT ??= "2525";
+process.env.RESEND_API_KEY ??= "re_test_key";
+
 process.env.MAIL_FROM ??= "test@example.com";
 
 // Node 18+ already has fetch/Request/Response/FormData/Headers.

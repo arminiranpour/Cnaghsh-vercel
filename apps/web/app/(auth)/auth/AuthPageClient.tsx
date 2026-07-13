@@ -9,9 +9,14 @@ import type { AuthTab } from "@/lib/url/auth-tabs";
 type AuthPageClientProps = {
   initialTab: AuthTab;
   callbackUrl?: string;
+  googleAuthAvailable: boolean;
 };
 
-export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps) {
+export function AuthPageClient({
+  initialTab,
+  callbackUrl,
+  googleAuthAvailable,
+}: AuthPageClientProps) {
   const [isPasswordPhase, setIsPasswordPhase] = useState(false);
 
   return (
@@ -36,6 +41,7 @@ export function AuthPageClient({ initialTab, callbackUrl }: AuthPageClientProps)
             <LoginForm
               initialTab={initialTab}
               callbackUrl={callbackUrl}
+              googleAuthAvailable={googleAuthAvailable}
               onPasswordPhaseChange={setIsPasswordPhase}
             />
           </div>

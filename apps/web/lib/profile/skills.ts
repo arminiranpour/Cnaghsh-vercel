@@ -34,7 +34,49 @@ export const SKILLS: { key: SkillKey; label: string; category: string }[] = [
 export const SKILL_KEYS = SKILLS.map((skill) => skill.key) as SkillKey[];
 
 const SKILL_KEY_SET = new Set<SkillKey>(SKILL_KEYS);
+const SKILL_LABEL_BY_KEY = new Map(SKILLS.map((skill) => [skill.key, skill.label] as const));
+const SKILL_KEY_BY_NORMALIZED_LABEL = new Map(
+  SKILLS.map((skill) => [normalizeSkillText(skill.label), skill.key] as const),
+);
 
 export function isSkillKey(value: unknown): value is SkillKey {
   return typeof value === "string" && SKILL_KEY_SET.has(value as SkillKey);
+}
+
+export function cleanSkillText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+export function normalizeSkillText(value: string): string {
+  return cleanSkillText(value).toLocaleLowerCase();
+}
+
+export function getSkillLabel(value: string): string {
+  return isSkillKey(value) ? (SKILL_LABEL_BY_KEY.get(value) ?? value) : value;
+}
+
+export function findSkillKeyByLabel(value: string): SkillKey | undefined {
+  return SKILL_KEY_BY_NORMALIZED_LABEL.get(normalizeSkillText(value));
+}
+
+export function resolveSkillValue(value: string): string {
+  const cleaned = cleanSkillText(value);
+  if (!cleaned) {
+    return "";
+  }
+
+  if (isSkillKey(cleaned)) {
+    return cleaned;
+  }
+
+  return findSkillKeyByLabel(cleaned) ?? cleaned;
+}
+
+export function getSkillIdentity(value: string): string {
+  const resolved = resolveSkillValue(value);
+  if (!resolved) {
+    return "";
+  }
+
+  return isSkillKey(resolved) ? resolved : normalizeSkillText(resolved);
 }

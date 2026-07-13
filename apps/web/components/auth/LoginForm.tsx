@@ -1,19 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { User, Mail, Phone, Lock, Eye, EyeOff } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useToast } from "@/components/ui/use-toast";
+import {
+  GOOGLE_AUTH_NOT_CONFIGURED_MESSAGE,
+  resolveAuthCallbackUrl,
+  startGoogleSignIn,
+} from "@/lib/auth/google";
 import { cn } from "@/lib/utils";
 import type { AuthTab } from "@/lib/url/auth-tabs";
 
 
 type LoginFormProps = {
   callbackUrl?: string;
+  googleAuthAvailable: boolean;
   onPasswordPhaseChange?: (isActive: boolean) => void;
   initialTab?: AuthTab;
 };
@@ -51,10 +57,12 @@ const normalizeDigits = (value: string) =>
 
 export function LoginForm({
   callbackUrl,
+  googleAuthAvailable,
   onPasswordPhaseChange,
   initialTab,
 }: LoginFormProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
   const [mode, setMode] = useState<AuthMode>(() =>
     initialTab === "signin" ? "login" : "register",
@@ -69,6 +77,22 @@ export function LoginForm({
     phone: "",
     password: "",
   });
+
+  useEffect(() => {
+    const errorParam = searchParams.get("error");
+
+    if (!errorParam) {
+      return;
+    }
+
+    const errorMessages: Record<string, string> = {
+      AccessDenied: "ورود با گوگل انجام نشد. لطفاً دوباره تلاش کنید.",
+      OAuthAccountNotLinked:
+        "این ایمیل قبلاً با رمز عبور ثبت شده است. لطفاً با همان روش وارد شوید.",
+    };
+
+    setError(errorMessages[errorParam] ?? "خطایی رخ داد. لطفاً دوباره تلاش کنید.");
+  }, [searchParams]);
 
   const handleInputChange = (field: keyof typeof formData, value: string) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -160,7 +184,7 @@ export function LoginForm({
           redirect: false,
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          callbackUrl: callbackUrl ?? "/dashboard/profile",
+          callbackUrl: resolveAuthCallbackUrl(callbackUrl),
         });
 
         if (signInResult?.error) {
@@ -179,7 +203,8 @@ export function LoginForm({
         });
 
         setIsSubmitting(false);
-        const destination = signInResult?.url ?? callbackUrl ?? "/dashboard/profile";
+        const destination =
+          signInResult?.url ?? resolveAuthCallbackUrl(callbackUrl);
         router.push(destination);
         router.refresh();
       } catch (err) {
@@ -200,7 +225,7 @@ export function LoginForm({
         redirect: false,
         email: formData.email.toLowerCase().trim(),
         password: formData.password,
-        callbackUrl: callbackUrl ?? "/dashboard/profile",
+        callbackUrl: resolveAuthCallbackUrl(callbackUrl),
       });
 
       setIsSubmitting(false);
@@ -214,20 +239,22 @@ export function LoginForm({
         return;
       }
 
-      const destination = result?.url ?? callbackUrl ?? "/dashboard/profile";
+      const destination = result?.url ?? resolveAuthCallbackUrl(callbackUrl);
       router.push(destination);
       router.refresh();
     }
   };
 
   const handleGoogleSignIn = async () => {
+    if (!googleAuthAvailable) {
+      setError(GOOGLE_AUTH_NOT_CONFIGURED_MESSAGE);
+      return;
+    }
+
     setIsSubmitting(true);
     setError(null);
     try {
-      await signIn("google", {
-        callbackUrl: callbackUrl ?? "/dashboard/profile",
-        redirect: true,
-      });
+      await startGoogleSignIn(signIn, callbackUrl);
     } catch (err) {
       setError("خطا در ورود با گوگل. لطفاً دوباره تلاش کنید.");
       setIsSubmitting(false);

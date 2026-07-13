@@ -36,12 +36,6 @@ services:
     volumes:
       - minio_data:/data
 
-  mailhog:
-    image: mailhog/mailhog
-    container_name: casting-mailhog
-    ports:
-      - "1025:1025"
-      - "8025:8025"
 
 volumes:
   pg_data:

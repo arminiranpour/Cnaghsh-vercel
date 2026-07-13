@@ -13,9 +13,19 @@ const nextConfig = {
   compress: true,
   images: {
     formats: ["image/avif", "image/webp"],
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+      },
+      {
+        protocol: "https",
+        hostname: "pub-900a7c72b1034e658f23b0dca1f16fc2.r2.dev",
+      },
+    ],
   },
+  typedRoutes: true,
   experimental: {
-    typedRoutes: true,
     serverActions: {
       bodySizeLimit: "5mb",
     },

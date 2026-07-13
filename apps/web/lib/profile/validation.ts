@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 import { LANGUAGE_LEVEL_MAX } from "./languages";
-import { SKILL_KEYS, type SkillKey } from "./skills";
+import { getSkillIdentity, resolveSkillValue } from "./skills";
 
 const AVATAR_URL_ERROR = "لطفاً تصویر پروفایل معتبر انتخاب کنید.";
 
@@ -62,10 +62,28 @@ export const personalInfoSchema = z.object({
     .or(z.literal("")),
 });
 
-const SKILL_KEY_VALUES = SKILL_KEYS as [SkillKey, ...SkillKey[]];
-
 export const skillsSchema = z.object({
-  skills: z.array(z.enum(SKILL_KEY_VALUES)).optional().default([]),
+  skills: z
+    .array(z.string().trim().min(1, "لطفاً مهارت معتبر وارد کنید.").max(191))
+    .optional()
+    .default([])
+    .transform((skills) => {
+      const result: string[] = [];
+      const seen = new Set<string>();
+
+      for (const skill of skills) {
+        const resolved = resolveSkillValue(skill);
+        const identity = getSkillIdentity(resolved);
+        if (!resolved || seen.has(identity)) {
+          continue;
+        }
+
+        seen.add(identity);
+        result.push(resolved);
+      }
+
+      return result;
+    }),
 });
 
 const experienceEntrySchema = z.object({
