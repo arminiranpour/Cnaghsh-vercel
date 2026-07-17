@@ -1,15 +1,10 @@
 "use server";
 
-import { randomUUID } from "node:crypto";
-
 import { z } from "zod";
 import {
   CourseDurationUnit,
   CourseStatus,
   DayOfWeek,
-  MediaStatus,
-  MediaType,
-  MediaVisibility,
   SemesterStatus,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
@@ -17,6 +12,7 @@ import { notFound } from "next/navigation";
 import type { SessionUser } from "next-auth";
 
 import { getServerAuthSession } from "@/lib/auth/session";
+import { createReadyImageMediaAsset, ImageAssetProcessingError } from "@/lib/media/media-asset-images";
 import { prisma } from "@/lib/prisma";
 import {
   archiveCourse,
@@ -37,9 +33,6 @@ import {
   addSlot,
   updateSlot,
 } from "@/lib/courses/admin";
-import { getOriginalKey } from "@/lib/storage/keys";
-import { putBuffer } from "@/lib/storage/s3";
-import { resolveBucketForVisibility } from "@/lib/storage/visibility";
 
 type FieldErrors<TFields extends string> = Partial<Record<TFields, string>>;
 
@@ -142,14 +135,6 @@ const scheduleSlotSchema = z.object({
 });
 
 const BANNER_MAX_BYTES = 10 * 1024 * 1024;
-const BANNER_MIME_EXTENSIONS: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/jpg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
-const normalizeMime = (value: string) => value.split(";")[0]?.trim().toLowerCase() ?? "";
 
 const trimToUndefined = (value?: string | null): string | undefined => {
   if (typeof value !== "string") {
@@ -301,11 +286,6 @@ export async function uploadCourseBannerAction(
     if (file.size > BANNER_MAX_BYTES) {
       return { ok: false, error: "Image must be 10MB or smaller." };
     }
-    const normalizedType = normalizeMime(file.type);
-    const extension = BANNER_MIME_EXTENSIONS[normalizedType];
-    if (!extension) {
-      return { ok: false, error: "Only JPG, PNG, or WEBP images are allowed." };
-    }
     const course = await prisma.course.findUnique({
       where: { id: courseId },
       select: { id: true },
@@ -314,21 +294,12 @@ export async function uploadCourseBannerAction(
       return { ok: false, error: "Course not found." };
     }
     const buffer = Buffer.from(await file.arrayBuffer());
-    const mediaId = randomUUID();
-    const key = getOriginalKey(admin.id, mediaId, extension);
-    const bucket = resolveBucketForVisibility("public");
-    await putBuffer(bucket, key, buffer, normalizedType);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        id: mediaId,
-        type: MediaType.image,
-        status: MediaStatus.ready,
-        visibility: MediaVisibility.public,
-        ownerUserId: admin.id,
-        sourceKey: key,
-        outputKey: key,
-        sizeBytes: BigInt(file.size),
-      },
+    const media = await createReadyImageMediaAsset({
+      ownerUserId: admin.id,
+      buffer,
+      declaredMime: file.type,
+      visibility: "public",
+      sizeBytes: file.size,
     });
     await prisma.course.update({
       where: { id: courseId },
@@ -338,6 +309,9 @@ export async function uploadCourseBannerAction(
     revalidatePath(`/admin/courses/${courseId}`);
     return { ok: true, mediaId: media.id };
   } catch (error) {
+    if (error instanceof ImageAssetProcessingError) {
+      return { ok: false, error: "Only JPG, PNG, WEBP, or HEIC images are allowed." };
+    }
     return { ok: false, error: "Failed to upload banner." };
   }
 }

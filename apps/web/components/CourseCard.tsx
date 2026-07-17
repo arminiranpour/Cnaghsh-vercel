@@ -1,6 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
 import Link from "next/link";
 
+import { buildResponsiveImageSrcSet } from "@/lib/media/responsive-images";
+
 type CourseCardProps = {
   id: string;
   title: string;
@@ -27,6 +29,8 @@ export default function CourseCard({ id, title, imageUrl }: CourseCardProps) {
           <div className="flex h-full w-full items-center justify-center">
             <img
               src={imageUrl}
+              srcSet={buildResponsiveImageSrcSet(imageUrl)}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               alt={title}
               loading="lazy"
               className="max-h-full max-w-full object-contain"

@@ -95,6 +95,8 @@ model Profile {
   bio               String?
   introVideoMediaId String?
   likesCount        Int               @default(0)
+  rating            Int               @default(0)
+  skillLevel        Int               @default(0)
   gallery           Json?
   videos            Json?
   skills            Json?

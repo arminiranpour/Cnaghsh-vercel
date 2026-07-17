@@ -88,7 +88,7 @@ export function AwardsSlide({ awards }: AwardsSlideProps) {
                   }}
                 >
                   <Image
-                    src="/cineflash/profile/trophy.png"
+                    src="/cineflash/profile/trophy.svg"
                     width={26}
                     height={26}
                     alt="award icon"

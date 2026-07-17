@@ -1,16 +1,14 @@
-import { randomUUID } from "node:crypto";
-
-import { MediaStatus, MediaType, MediaVisibility } from "@prisma/client";
+import { MediaType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import type { SessionUser } from "next-auth";
 
 import { requireAdminSession } from "@/lib/auth/admin";
 import { NO_STORE_HEADERS } from "@/lib/http";
-import { getPublicMediaUrlFromKey } from "@/lib/media/urls";
+import { createUploadedMediaAssetFromBuffer } from "@/lib/media/media-asset-upload";
+import { MediaTranscodeDisabledError, queueMediaTranscode } from "@/lib/media/transcode";
 import { prisma } from "@/lib/prisma";
-import { getOriginalKey } from "@/lib/storage/keys";
-import { putBuffer } from "@/lib/storage/s3";
+import { remove } from "@/lib/storage/s3";
 import { resolveBucketForVisibility } from "@/lib/storage/visibility";
 
 type IntroVideoResponse = {
@@ -25,12 +23,6 @@ const MAX_VIDEO_BYTES =
   Number.isFinite(MAX_VIDEO_MB) && MAX_VIDEO_MB > 0
     ? MAX_VIDEO_MB * 1024 * 1024
     : 600 * 1024 * 1024;
-
-const VIDEO_MIME_EXTENSIONS: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/webm": "webm",
-  "video/quicktime": "mov",
-};
 
 const normalizeMime = (value: string) => value.split(";")[0]?.trim().toLowerCase() ?? "";
 
@@ -82,8 +74,7 @@ export async function POST(
   }
 
   const normalizedType = normalizeMime(file.type);
-  const extension = VIDEO_MIME_EXTENSIONS[normalizedType];
-  if (!extension) {
+  if (!["video/mp4", "video/webm", "video/quicktime", "video/x-matroska"].includes(normalizedType)) {
     return failure(400, "UNSUPPORTED_MEDIA_TYPE");
   }
 
@@ -95,25 +86,21 @@ export async function POST(
     return failure(404, "COURSE_NOT_FOUND");
   }
 
+  let createdMediaId: string | null = null;
+  let createdSourceKey: string | null = null;
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const mediaId = randomUUID();
-    const key = getOriginalKey(admin.id, mediaId, extension);
-    const bucket = resolveBucketForVisibility("public");
-    await putBuffer(bucket, key, buffer, normalizedType);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        id: mediaId,
-        type: MediaType.video,
-        status: MediaStatus.ready,
-        visibility: MediaVisibility.public,
-        ownerUserId: admin.id,
-        sourceKey: key,
-        outputKey: key,
-        sizeBytes: BigInt(file.size),
-      },
-      select: { id: true, outputKey: true },
+    const media = await createUploadedMediaAssetFromBuffer({
+      ownerUserId: admin.id,
+      buffer,
+      declaredMime: normalizedType,
+      mediaType: MediaType.video,
+      visibility: "public",
+      sizeBytes: file.size,
     });
+    createdMediaId = media.id;
+    createdSourceKey = media.sourceKey;
+    await queueMediaTranscode(media.id);
     await prisma.course.update({
       where: { id: course.id },
       data: { introVideoMediaAssetId: media.id },
@@ -125,9 +112,18 @@ export async function POST(
     return success({
       ok: true,
       mediaId: media.id,
-      url: media.outputKey ? getPublicMediaUrlFromKey(media.outputKey) : null,
+      url: null,
     });
   } catch (error) {
+    if (createdMediaId) {
+      await prisma.mediaAsset.delete({ where: { id: createdMediaId } }).catch(() => undefined);
+    }
+    if (createdSourceKey) {
+      await remove(resolveBucketForVisibility("private"), createdSourceKey).catch(() => undefined);
+    }
+    if (error instanceof MediaTranscodeDisabledError) {
+      return failure(503, "TRANSCODE_DISABLED");
+    }
     return failure(500, "UPLOAD_FAILED");
   }
 }

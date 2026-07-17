@@ -8,6 +8,7 @@ import { logError, logInfo } from "@/lib/logging";
 import { prisma } from "@/lib/prisma";
 import { storageConfig } from "@/lib/storage/config";
 import { getSignedGetUrl } from "@/lib/storage/signing";
+import { resolveBucketForVisibility } from "@/lib/storage/visibility";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
@@ -40,6 +41,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
         type: true,
         visibility: true,
         sourceKey: true,
+        outputKey: true,
       },
     });
 
@@ -47,7 +49,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       !media ||
       media.type !== MediaType.audio ||
       media.status !== MediaStatus.ready ||
-      !media.sourceKey
+      !(media.outputKey || media.sourceKey)
     ) {
       logInfo("media.file.fetch", { mediaId, result: "not_found" });
       return NextResponse.json(
@@ -82,15 +84,24 @@ export async function GET(_request: NextRequest, context: RouteContext) {
       }
     }
 
-    const signedUrl = await getSignedGetUrl(privateBucket, media.sourceKey);
+    const key = media.outputKey ?? media.sourceKey;
+    if (!key) {
+      return NextResponse.json(
+        { error: "NOT_FOUND" },
+        { status: 404, headers: NO_STORE_HEADERS },
+      );
+    }
+
+    const bucket = media.outputKey ? resolveBucketForVisibility("public") : privateBucket;
+    const signedUrl = await getSignedGetUrl(bucket, key);
 
     logInfo("media.file.fetch", {
       mediaId,
       userId,
       ownerUserId: media.ownerUserId,
       visibility: media.visibility,
-      bucket: privateBucket,
-      key: media.sourceKey,
+      bucket,
+      key,
       result: "redirect",
     });
 

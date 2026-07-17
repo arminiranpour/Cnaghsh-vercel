@@ -166,6 +166,8 @@ export function DashboardProfileClient({
       <CenterPane
         activeTab={activeTab}
         profile={profile}
+        isOwner={isOwner}
+        onTabChange={setActiveTab}
         canEdit={canEdit}
         shouldHighlightEditButton={showEditIconPulse}
         onEditClick={() => {

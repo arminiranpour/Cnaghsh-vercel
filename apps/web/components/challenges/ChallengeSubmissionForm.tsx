@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import { formatChallengeMediaLimit } from "@/lib/challenges/constants";
 import { saveChallengeSubmissionAction } from "@/lib/challenges/actions";
+import { VIDEO_ACCEPT } from "@/lib/media/formats";
 import type { UploadResponse } from "@/lib/media/types";
 
 type ChallengeSubmissionFormProps = {
@@ -49,7 +50,7 @@ type VideoUploadState = {
   status?: MediaStatusResponse["status"];
 };
 
-const ACCEPTED_TYPES = ".mp4,.mov,.webm,video/mp4,video/webm,video/quicktime";
+const ACCEPTED_TYPES = VIDEO_ACCEPT;
 const POLL_INTERVAL_MS = 3000;
 const MAX_SIZE_LABEL = "حداکثر حجم: ۴۰ مگابایت";
 

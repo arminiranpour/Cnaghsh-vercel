@@ -7,6 +7,7 @@ import { iransans, iransansBold } from "@/app/fonts";
 import { MovieHeroSaveButton } from "@/components/movies/MovieHeroSaveButton";
 import Header from "@/components/Header";
 import { getServerAuthSession } from "@/lib/auth/session";
+import { buildResponsiveImageSrcSet } from "@/lib/media/responsive-images";
 import { getPublicMediaUrlFromKey } from "@/lib/media/urls";
 import { prisma } from "@/lib/prisma";
 
@@ -137,6 +138,8 @@ export default async function MovieDetailsPage({
         {posterUrl ? (
           <img
             src={posterUrl}
+            srcSet={buildResponsiveImageSrcSet(posterUrl)}
+            sizes="100vw"
             alt={movie.titleFa}
             className="absolute inset-0 z-0 h-full w-full object-cover"
             style={{ transform: "scaleX(-1)" }}

@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 const ORANGE = "#F58A1F";
 const GRAY = "#7C7C7C";
@@ -10,6 +10,7 @@ type ActionId = "share";
 
 type TopActionsProps = {
   canEdit?: boolean;
+  canLike?: boolean;
   shouldHighlightEditButton?: boolean;
   onEditClick?: () => void;
   profileId?: string;
@@ -43,6 +44,7 @@ const numberFormatter = new Intl.NumberFormat("fa-IR", { useGrouping: false });
 
 export function TopActions({
   canEdit,
+  canLike = true,
   shouldHighlightEditButton = false,
   onEditClick,
   profileId,
@@ -50,9 +52,17 @@ export function TopActions({
   initialLikesCount = 0,
 }: TopActionsProps) {
   const [shareActive, setShareActive] = useState(false);
-  const [saved, setSaved] = useState(initialSaved);
+  const [saved, setSaved] = useState(canLike ? initialSaved : false);
   const [likesCount, setLikesCount] = useState(initialLikesCount);
   const [isPending, setIsPending] = useState(false);
+
+  useEffect(() => {
+    setSaved(canLike ? initialSaved : false);
+  }, [canLike, initialSaved]);
+
+  useEffect(() => {
+    setLikesCount(initialLikesCount);
+  }, [initialLikesCount]);
 
   const formattedLikes = useMemo(
     () => numberFormatter.format(Math.max(0, likesCount)),
@@ -89,8 +99,9 @@ export function TopActions({
 
       <button
         type="button"
+        disabled={!canLike}
         onClick={async () => {
-          if (!profileId || isPending) {
+          if (!canLike || !profileId || isPending) {
             return;
           }
           const next = !saved;
@@ -128,8 +139,9 @@ export function TopActions({
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          cursor: profileId ? "pointer" : "default",
+          cursor: canLike && profileId ? "pointer" : "default",
           color: saved ? ORANGE : GRAY,
+          opacity: canLike ? 1 : 0.45,
           transition: "color 0.15s ease",
         }}
       >
@@ -176,7 +188,7 @@ export function TopActions({
             }}
           >
             <Image
-              src="/cineflash/profile/edit.png"
+              src="/cineflash/profile/topActions/edit.svg"
               alt="ویرایش پروفایل"
               width={16}
               height={16}

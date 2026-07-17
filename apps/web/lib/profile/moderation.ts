@@ -29,6 +29,8 @@ export const MODERATION_PROFILE_SELECT = {
   cityId: true,
   phone: true,
   address: true,
+  rating: true,
+  skillLevel: true,
   gallery: true,
   skills: true,
   languages: true,

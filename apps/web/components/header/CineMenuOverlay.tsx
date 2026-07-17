@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { iransans } from "@/app/fonts";
 
@@ -17,53 +17,53 @@ type MenuItem = {
   label: string;
   href: string;
   iconSrc: string;
-  iconHoverSrc: string; 
 };
+
+const menuIconHoverFilter =
+  "brightness(0) saturate(100%) invert(63%) sepia(97%) saturate(1777%) hue-rotate(350deg) brightness(101%) contrast(101%)";
+
 const rightItems: MenuItem[] = [
-  { label: "مقالات", href: "/articles", iconSrc: "/cineflash/home/Hamberger Menu/resume_9564228.png",iconHoverSrc: "/cineflash/home/Hamberger Menu/resume_9564227.png",},
-  { label: "قوانین", href: "/rules", iconSrc: "/cineflash/home/Hamberger Menu/help_16393456.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/help_16393455.png"},
-  { label: "ارتباط با ما", href: "/contact", iconSrc: "/cineflash/home/Hamberger Menu/contact.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/podcast_black.png"},
-  { label: "درباره سی‌نقش", href: "/about", iconSrc: "/cineflash/home/Hamberger Menu/about_12180739.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/about_12180738.png"},
+  { label: "مقالات", href: "/articles", iconSrc: "/cineflash/home/Hamberger-Menu/resume_9564228 1.svg" },
+  { label: "قوانین", href: "/rules", iconSrc: "/cineflash/home/Hamberger-Menu/rules.svg" },
+  { label: "ارتباط با ما", href: "/contact", iconSrc: "/cineflash/home/Hamberger-Menu/contactUs.svg" },
+  { label: "درباره سی‌نقش", href: "/about", iconSrc: "/cineflash/home/Hamberger-Menu/about_12180739 1.svg" },
 ];
 
 const leftItems: MenuItem[] = [
-  { label: "پادکست سی‌نقش", href: "/podcast", iconSrc: "/cineflash/home/Hamberger Menu/vecteezy_podcast-line-icons-collection-illustration_55791644 [Converted].png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/podcast_black.png"},
-  { label: "کتاب", href: "/books", iconSrc: "/cineflash/home/Hamberger Menu/book_151456.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/book_151455.png"},
-  { label: "فیلم", href: "/movies", iconSrc: "/cineflash/home/Hamberger Menu/film_1101794.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/film_1101793.png"},
-  { label: "تئاتر", href: "/theatre", iconSrc: "/cineflash/home/Hamberger Menu/theater_1778558.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/theater_1778557.png"},
-  { label: "مونولوگ", href: "/monologue", iconSrc: "/cineflash/home/Hamberger Menu/psychologist_1084208.png" ,iconHoverSrc: "/cineflash/home/Hamberger Menu/psychologist_1084207.png"},
+  { label: "پادکست سی‌نقش", href: "/podcast", iconSrc: "/cineflash/home/Hamberger-Menu/vecteezy_podcast-line-icons-collection-illustration_55791644 [Converted] 1.svg" },
+  { label: "کتاب", href: "/books", iconSrc: "/cineflash/home/Hamberger-Menu/book_151456 1.svg" },
+  { label: "فیلم", href: "/movies", iconSrc: "/cineflash/home/Hamberger-Menu/film_1101794 1.svg" },
+  { label: "تئاتر", href: "/theatre", iconSrc: "/cineflash/home/Hamberger-Menu/theater_1778558 1.svg" },
+  { label: "مونولوگ", href: "/monologue", iconSrc: "/cineflash/home/Hamberger-Menu/psychologist_1084208 1.svg" },
 ];
 
 export function CineMenuOverlayContent({
   mode = "overlay",
   onNavigate,
 }: CineMenuOverlayContentProps) {
+  const [hoveredHref, setHoveredHref] = useState<string | null>(null);
+
   const renderItem = (item: MenuItem, textSizeClass: string) => (
     <Link key={item.href} href={item.href} onClick={onNavigate}>
       <div
         className={`group flex items-center gap-3 border-b border-white/20 py-3 ${textSizeClass} cursor-pointer`}
+        onMouseEnter={() => setHoveredHref(item.href)}
+        onMouseLeave={() => setHoveredHref((current) => (current === item.href ? null : current))}
+        onFocus={() => setHoveredHref(item.href)}
+        onBlur={() => setHoveredHref((current) => (current === item.href ? null : current))}
       >
-        {/* ICON WRAPPER — keeps both icons in the same spot */}
         <div className="relative w-[19px] h-[19px]">
-          {/* Default Icon (white) */}
           <Image
             src={item.iconSrc}
             alt=""
             fill
-            className="object-contain group-hover:opacity-0 transition-opacity duration-150"
-            unoptimized
-          />
-
-          {/* Hover Icon (black) */}
-          <Image
-            src={item.iconHoverSrc}
-            alt=""
-            fill
-            className="object-contain opacity-0 group-hover:opacity-100 transition-opacity duration-150"
+            className="object-contain transition-[filter] duration-200"
+            style={{
+              filter: hoveredHref === item.href ? menuIconHoverFilter : "none",
+            }}
             unoptimized
           />
         </div>
-        {/* TEXT */}
         <span className="font-semibold transition-colors duration-200 group-hover:text-[#FF7F19]">
           {item.label}
         </span>
@@ -128,9 +128,6 @@ export function CineMenuOverlay({ open, onClose }: CineMenuOverlayProps) {
         -translate-x-1/2
         z-[70]
       "
-      style={{
-        backgroundImage: "url('/cineflash/home/Hamberger Menu/Hamburger Menu BG.png')",
-      }}
     >
       <div 
         ref={menuRef}

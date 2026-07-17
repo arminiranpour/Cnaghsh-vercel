@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 
 type Feature = {
@@ -54,14 +53,25 @@ export function SubscriptionPlanCard({
           <p className="mt-1 text-sm text-gray-500">{subtitle}</p>
         )}
         <div className="mt-4 flex justify-center">
-          <Image
-            src="/plans/underline.png"
-            alt="underline"
+          <svg
             width={200}
             height={10}
-            className="h-auto w-full max-w-[200px]"
-            unoptimized
-          />
+            viewBox="0 0 440 12"
+            className="h-auto w-full max-w-[200px] text-black"
+            aria-hidden="true"
+            preserveAspectRatio="none"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+
+            <path
+              d="M8 5.5H432"
+              fill="none"
+              stroke="currentColor"
+              strokeOpacity="0.2"
+              strokeWidth="2"
+            />
+          </svg>
         </div>
       </div>
 
@@ -71,23 +81,49 @@ export function SubscriptionPlanCard({
           <div key={index} className="flex items-start gap-3 lg:text-sm text-xs">
             <div className="mt-0.5 h-5 w-5 flex-shrink-0">
               {feature.enabled ? (
-                <Image
-                  src="/plans/check.png"
-                  alt="check"
+                <svg
                   width={20}
                   height={20}
-                  className="h-5 w-5"
-                  unoptimized
-                />
+                  viewBox="0 0 20 20"
+                  className="h-5 w-5 text-black"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M3.5 10.5L7.75 14.75L16.5 5.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeOpacity="0.5"
+                    strokeWidth="4"
+                    strokeLinecap="butt"
+                    strokeLinejoin="miter"
+                    vectorEffect="non-scaling-stroke"
+                  />
+                </svg>
               ) : (
-                <Image
-                  src="/plans/notcheck(x).png"
-                  alt="not check"
+                <svg
                   width={20}
                   height={20}
-                  className="h-5 w-5"
-                  unoptimized
-                />
+                  viewBox="0 0 20 20"
+                  className="h-5 w-5 text-black"
+                  aria-hidden="true"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path
+                    d="M4.5 4.5L15.5 15.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeOpacity="0.6"
+                    strokeWidth="3.5"
+                  />
+                  <path
+                    d="M15.5 4.5L4.5 15.5"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeOpacity="0.6"
+                    strokeWidth="3.5"
+                  />
+                </svg>
               )}
             </div>
             <span className={feature.enabled ? "text-black" : "text-gray-400"}>

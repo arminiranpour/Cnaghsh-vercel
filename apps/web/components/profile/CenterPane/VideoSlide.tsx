@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
 
 import type { ProfileVideoData } from "@/components/profile/ProfilePageClient";
 
@@ -11,33 +11,14 @@ type VideosSlideProps = {
   videos?: ProfileVideoData[];
 };
 
-const ITEMS_PER_PAGE = 6;
-
 export function VideosSlide({ videos }: VideosSlideProps) {
   const normalizedVideos = useMemo(
     () => (videos ?? []).filter((video) => video?.mediaId && video.url),
     [videos],
   );
-
-  const [page, setPage] = useState(0);
-
-  useEffect(() => {
-    setPage(0);
-  }, [normalizedVideos.length]);
-
-  const totalPages = Math.max(1, Math.ceil(normalizedVideos.length / ITEMS_PER_PAGE));
-  const startIndex = page * ITEMS_PER_PAGE;
-  const pageVideos = normalizedVideos.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  const slots = Array.from({ length: ITEMS_PER_PAGE }, (_, index) => pageVideos[index]);
+  const slots = Array.from({ length: 6 }, (_, index) => normalizedVideos[index]);
 
   const showEmptyState = normalizedVideos.length === 0;
-
-  const handleNextPage = () => {
-    if (totalPages <= 1) {
-      return;
-    }
-    setPage((prev) => (prev + 1) % totalPages);
-  };
 
   return (
     <div
@@ -66,7 +47,7 @@ export function VideosSlide({ videos }: VideosSlideProps) {
       >
         {slots.map((video, index) => {
           const title = video?.title?.trim() || "ویدئو";
-          const badge = video ? `#${startIndex + index + 1}` : "جای خالی";
+          const badge = video ? `#${index + 1}` : "جای خالی";
           const placeholderText = showEmptyState ? "ویدیویی برای نمایش وجود ندارد" : "ویدئو اضافه کنید";
           return (
             <div
@@ -151,14 +132,6 @@ export function VideosSlide({ videos }: VideosSlideProps) {
         })}
       </div>
 
-      <div
-        onClick={totalPages > 1 ? handleNextPage : undefined}
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-[38px] text-[15px] font-bold text-[#FF7F19] md:absolute md:left-[328px] md:top-[748px] md:mt-0 md:h-[44px] md:w-[141px]"
-        style={{ cursor: totalPages > 1 ? "pointer" : "default", opacity: totalPages > 1 ? 1 : 0.5 }}
-      >
-        <span>صفحه بعد</span>
-        <span style={{ fontSize: 20, marginBottom: 2 }}>←</span>
-      </div>
     </div>
   );
 }

@@ -4,6 +4,7 @@ import type { PublicProfileData, ProfileVideoData } from "@/components/profile/P
 import type { City } from "@/lib/location/cities";
 import { getPlaybackInfoForMedia } from "@/lib/media/urls";
 import { prisma } from "@/lib/prisma";
+import { normalizeAccentEntries } from "@/lib/profile/accents";
 import { normalizeLanguageSkills } from "@/lib/profile/languages";
 import { SKILLS, type SkillKey } from "@/lib/profile/skills";
 
@@ -87,54 +88,8 @@ export function normalizeLanguages(raw: Prisma.JsonValue | null | undefined) {
   return normalizeLanguageSkills(raw);
 }
 
-export function normalizeAccents(raw: Prisma.JsonValue | null | undefined): string[] {
-  if (!Array.isArray(raw)) return [];
-
-  const result: string[] = [];
-  const seen = new Set<string>();
-
-  for (const item of raw) {
-    if (typeof item === "string") {
-      const cleaned = item.trim();
-      if (!cleaned) {
-        continue;
-      }
-
-      const dedupeKey = cleaned.toLowerCase();
-      if (seen.has(dedupeKey)) {
-        continue;
-      }
-
-      seen.add(dedupeKey);
-      result.push(cleaned);
-      continue;
-    }
-
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      continue;
-    }
-
-    const title =
-      typeof (item as { title?: unknown }).title === "string"
-        ? ((item as { title?: string }).title ?? "").trim()
-        : typeof (item as { label?: unknown }).label === "string"
-          ? ((item as { label?: string }).label ?? "").trim()
-          : "";
-
-    if (!title) {
-      continue;
-    }
-
-    const dedupeKey = title.toLowerCase();
-    if (seen.has(dedupeKey)) {
-      continue;
-    }
-
-    seen.add(dedupeKey);
-    result.push(title);
-  }
-
-  return result;
+export function normalizeAccents(raw: Prisma.JsonValue | null | undefined) {
+  return normalizeAccentEntries(raw);
 }
 
 export function normalizeDegrees(
@@ -276,10 +231,10 @@ function normalizeVideos(
 
 export function normalizeVoices(
   raw: Prisma.JsonValue | null | undefined,
-): { mediaId: string; url: string; title?: string | null; duration?: number | null }[] {
+): { mediaId: string; url: string; title?: string | null; duration?: number | null; fileName?: string | null }[] {
   if (!Array.isArray(raw)) return [];
 
-  const result: { mediaId: string; url: string; title?: string | null; duration?: number | null }[] =
+  const result: { mediaId: string; url: string; title?: string | null; duration?: number | null; fileName?: string | null }[] =
     [];
 
   for (const item of raw) {
@@ -301,9 +256,13 @@ export function normalizeVoices(
       Number.isFinite((item as { duration?: number }).duration)
         ? (item as { duration?: number }).duration
         : null;
+    const fileName =
+      typeof (item as { fileName?: unknown }).fileName === "string"
+        ? ((item as { fileName?: string }).fileName ?? "").trim()
+        : null;
 
     if (mediaId && url) {
-      result.push({ mediaId, url, title, duration });
+      result.push({ mediaId, url, title, duration, fileName });
     }
   }
 
@@ -365,6 +324,8 @@ export async function buildProfilePageData(
     bio: profile.bio,
     cityName: profile.cityId ? cityMap.get(profile.cityId) ?? undefined : undefined,
     likesCount: profile.likesCount ?? 0,
+    rating: profile.rating ?? 0,
+    skillLevel: profile.skillLevel ?? 0,
     isSavedByMe: false,
     skills: normalizeSkills(profile.skills),
     languages: normalizeLanguages(profile.languages),

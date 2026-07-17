@@ -2,6 +2,10 @@
 
 import Image from "next/image";
 
+const DEFAULT_STAR_SRC =
+  "/cineflash/home/Bazigaran/vecteezy_set-of-star-rotate-game-sprite-animation-ui-rate_14320508 [Converted] 1.svg";
+const DEFAULT_PROFILE_SRC = "/cineflash/home/Bazigaran/11392 1.svg";
+
 type FeaturedCardProps = {
   name: string;
   age?: number | null;
@@ -18,21 +22,23 @@ export default function Card({
   avatarUrl,
   level = "حرفه‌ای",
   rating = 4.5,
-  frameSrc = "/cineflash/home/Bazigaran/CardFrame.png",
-  starSrc = "/cineflash/home/Bazigaran/Star.png",
+  starSrc = DEFAULT_STAR_SRC,
 }: FeaturedCardProps) {
+  const faNumber = new Intl.NumberFormat("fa-IR");
   const avatarSrc = avatarUrl && avatarUrl.trim()
     ? avatarUrl
-    : "/cineflash/home/Header/user.png"; // fallback image
+    : DEFAULT_PROFILE_SRC;
+  const ratingLabel =
+    typeof rating === "number" ? faNumber.format(rating) : null;
 
   const ageLabel =
     typeof age === "number"
-      ? `سن: ${age} سال`
+      ? `سن: ${faNumber.format(age)} سال`
       : "سن ثبت نشده";
 
   return (
     <div
-      className="relative w-full h-full"
+      className="relative h-full w-full"
       style={{ direction: "rtl" }}
     >
       <div
@@ -41,20 +47,8 @@ export default function Card({
           w-full h-full
         "
       >
-        {/* Default Frame */}
-        <div className="absolute inset-0 pointer-events-none">
-          <Image
-            src={frameSrc}
-            alt="قاب کارت"
-            fill
-            unoptimized
-            sizes="100vw"
-            style={{ objectFit: "contain" }}
-          />
-        </div>
+        <div className="pointer-events-none absolute inset-0 rounded-[22px] border border-[#8C8C8C] bg-transparent" />
 
-
-        {/* Avatar (Profile Picture) */}
         <div
           className="absolute overflow-hidden"
           style={{
@@ -69,82 +63,83 @@ export default function Card({
             src={avatarSrc}
             alt={name}
             fill
-            sizes="100%"
+            unoptimized
+            sizes="230px"
             style={{ objectFit: "cover" }}
           />
         </div>
 
-        {/* Star, Rating, and Level Container */}
-        <div
-          className="absolute flex items-center justify-between w-full px-[14.3%]"
-          style={{
-            top: "60.9%",
-            left: 0,
-          }}
-        >
-          {/* Left side: Star and Rating */}
-          <div className="flex items-center gap-[1.8%]">
-            {/* Star */}
-            <div
-              className="relative flex items-center justify-center"
-              style={{
-                width: "4.3%",
-                height: "3.5%",
-                minWidth: "12px",
-                minHeight: "11px",
-              }}
-            >
-              <Image
-                src={starSrc}
-                alt="ستاره"
-                fill
-                unoptimized
-                sizes="4.3%"
-                style={{ objectFit: "contain" }}
-              />
-            </div>
-
-            {/* Rating */}
-            <div
-              className="font-iransans flex items-center justify-center"
-              style={{
-                fontSize: "clamp(10px, 3.8vw, 12px)",
-                fontWeight: 600,
-                lineHeight: "1.2",
-                color: "#FF7F19",
-              }}
-            >
-              {rating}
-            </div>
-          </div>
-
-          {/* Right side: Level */}
+        {ratingLabel || level ? (
           <div
-            className="flex items-center justify-center font-iransans"
+            className="absolute flex w-full items-center justify-between px-[14.3%]"
             style={{
-              width: "16.8%",
-              height: "4.5%",
-              minWidth: "47px",
-              minHeight: "14px",
-              backgroundColor: "#Ff7F19",
-              borderRadius: "19px",
+              top: "60.9%",
+              left: 0,
             }}
           >
-            <span
-              style={{
-                fontFamily: "IRANSans",
-                fontSize: "clamp(8px, 3.2vw, 10px)",
-                color: "#ffffff",
-                lineHeight: "1",
-                fontWeight: 500,
-              }}
-            >
-              {level}
-            </span>
-          </div>
-        </div>
+            {ratingLabel ? (
+              <div className="flex items-center gap-[1.8%] text-[#FFB200]">
+                <div
+                  className="relative flex items-center justify-center"
+                  style={{
+                    width: "4.3%",
+                    height: "3.5%",
+                    minWidth: "12px",
+                    minHeight: "11px",
+                  }}
+                >
+                  <Image
+                    src={starSrc}
+                    alt="ستاره"
+                    fill
+                    unoptimized
+                    sizes="20px"
+                    style={{ objectFit: "contain" }}
+                  />
+                </div>
 
-        {/* Name + Age */}
+                <div
+                  className="flex items-center justify-center font-iransans"
+                  style={{
+                    fontSize: "clamp(10px, 3.8vw, 12px)",
+                    fontWeight: 500,
+                    lineHeight: "1.2",
+                    color: "#FF9A1A",
+                  }}
+                >
+                  {ratingLabel}
+                </div>
+              </div>
+            ) : (
+              <div />
+            )}
+
+            {level ? (
+              <div
+                className="flex items-center justify-center rounded-full bg-[#FF7F19] font-iransans"
+                style={{
+                  width: "16.8%",
+                  height: "4.5%",
+                  minWidth: "47px",
+                  minHeight: "14px",
+                }}
+              >
+                <span
+                  style={{
+                    fontFamily: "IRANSans",
+                    fontSize: "clamp(8px, 3.2vw, 10px)",
+                    color: "#ffffff",
+                    lineHeight: "1",
+                    fontWeight: 500,
+                  }}
+                >
+                  {level}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         <div
           className="absolute w-full text-center"
           style={{ bottom: "16%", left: 0 }}
@@ -154,7 +149,7 @@ export default function Card({
               fontFamily: "IRANSans",
               fontSize: "clamp(14px, 5.8vw, 18px)",
               fontWeight: 800,
-              color: "#0F0F0F",
+              color: "#111111",
               lineHeight: "1.2",
             }}
           >
@@ -167,7 +162,7 @@ export default function Card({
               fontFamily: "IRANSans",
               fontSize: "clamp(9px, 3.5vw, 11px)",
               fontWeight: 400,
-              color: "#0F0F0F",
+              color: "#111111",
             }}
           >
             {ageLabel}

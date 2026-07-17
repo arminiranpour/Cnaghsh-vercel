@@ -39,13 +39,16 @@ const iranSans = localFont({
 export const metadata: Metadata = {
   title: "قیمت‌ها و پلن‌ها | سی‌نقش",
   description:
-    "پلن‌های اشتراک ماهانه و سالانه سی‌نقش را مقایسه کنید، ویژگی‌ها و مزایای هر پلن را ببینید و با اطمینان خرید کنید.",
+    "پلن‌های اشتراک ماهیانه، سه ماهه و سالانه سی‌نقش را مقایسه کنید، ویژگی‌ها و مزایای هر پلن را ببینید و با اطمینان خرید کنید.",
 };
 
 const CADENCE_LABELS = {
   monthly: "ماهانه",
+  quarterly: "سه ماهه",
   annual: "سالانه",
 } as const;
+
+type SearchParams = Record<string, string | string[] | undefined>;
 
 type CadenceKey = keyof typeof CADENCE_LABELS;
 
@@ -158,8 +161,11 @@ const reservedLimitKeys = new Set([
 
 const cadenceByCycle: Partial<Record<PlanCycle, CadenceKey>> = {
   [PlanCycle.MONTHLY]: "monthly",
+  [PlanCycle.QUARTERLY]: "quarterly",
   [PlanCycle.YEARLY]: "annual",
 };
+
+const cadencePriority: CadenceKey[] = ["monthly", "quarterly", "annual"];
 
 const numberFormatter = new Intl.NumberFormat("fa-IR");
 
@@ -569,7 +575,7 @@ const isCadenceKey = (value: string | undefined | null): value is CadenceKey => 
   if (!value) {
     return false;
   }
-  return value === "monthly" || value === "annual";
+  return value === "monthly" || value === "quarterly" || value === "annual";
 };
 
 export type { CadenceKey, NormalizedComparison, NormalizedFeature, NormalizedValue, PricingPlanCadence, PricingPlanGroupData, PricingSubscriptionInfo };
@@ -581,7 +587,7 @@ export type PricingViewer = {
 };
 
 const mapSearchCadence = (
-  searchParams: Record<string, string | string[] | undefined> | undefined,
+  searchParams: SearchParams | undefined,
 ): CadenceKey | null => {
   if (!searchParams) {
     return null;
@@ -600,8 +606,9 @@ const mapSearchCadence = (
 export default async function PricingPage({
   searchParams,
 }: {
-  searchParams?: Record<string, string | string[] | undefined>;
+  searchParams?: Promise<SearchParams>;
 }) {
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const session = await getServerAuthSession();
   const sessionUserId = session?.user?.id ?? null;
   const subscription = sessionUserId
@@ -664,13 +671,12 @@ export default async function PricingPage({
       }
     : null;
 
-  const urlCadence = mapSearchCadence(searchParams);
+  const urlCadence = mapSearchCadence(resolvedSearchParams);
   const requestedCadence =
     urlCadence ??
     subscriptionInfo?.cycle ??
-    (planGroups.some((group) => group.cadences.annual) && !planGroups.some((group) => group.cadences.monthly)
-      ? "annual"
-      : "monthly");
+    cadencePriority.find((cadence) => availableCadences.has(cadence)) ??
+    "monthly";
 
   const defaultCadence = availableCadences.has(requestedCadence)
     ? requestedCadence
@@ -683,9 +689,9 @@ export default async function PricingPage({
   };
 
   return (
-    <main className={`${iranSans.className} relative min-h-[840px] h-full w-full`}>
+    <main className={`${iranSans.className} relative min-h-[840px] h-full w-full bg-[#E5E5E5]`}>
       <div
-        className="fixed inset-0 -z-10 bg-[url('/images/auth-bg.jpg')] bg-cover bg-center bg-no-repeat"
+        className="fixed inset-0 -z-10 bg-[#E5E5E5]"
         aria-hidden="true"
       />
       <div className="mx-auto w-full max-w-[1600px] px-4 pt-[120px] pb-12">

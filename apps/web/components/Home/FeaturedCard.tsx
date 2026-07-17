@@ -9,6 +9,9 @@ import {
   type FeaturedActorCard,
 } from "./featured-card-data";
 
+const ARROW_ICON_SRC =
+  "/cineflash/home/Bazigaran/vecteezy_collection-of-arrow-directions-with-various-shapes_11592111-4 2.svg";
+
 type FeaturedCardProps = {
   cards?: FeaturedActorCard[];
 };
@@ -38,48 +41,47 @@ export default function FeaturedCard({ cards }: FeaturedCardProps) {
       {/* inner wrapper: centers the whole carousel and limits it to 4 cards width */}
       <div className="relative mx-auto h-full max-w-[1120px] flex items-center justify-center">
 
-
-        {/* Right arrow (visually "prev" in RTL) */}
-        <button
-          type="button"
-          onClick={() => scroll("right")}
-          className="
-            absolute right-[-120px] top-1/2 z-10 -translate-y-1/2
-            flex h-10 w-10 items-center justify-center
-            rounded-full text-black shadow
-            
-          "
-        >
-          <Image
-            src="/cineflash/home/Bazigaran/ArrowRight.png"
-            alt="فلش راست"
-            width={20}
-            height={20}
-            unoptimized
-            className="h-5 w-5"
-          />
-        </button>
-
         {/* Left arrow (visually "next" in RTL) */}
         <button
           type="button"
           onClick={() => scroll("left")}
           className="
-            absolute left-[-120px] top-1/2 z-10 -translate-y-1/2
-            flex h-10 w-10 items-center justify-center
-            rounded-full  text-black shadow
-            
+            absolute right-[-120px] top-1/2 z-10 -translate-y-1/2
+            flex h-12 w-12 items-center justify-center
+            text-black transition-transform duration-200 hover:scale-110
           "
         >
           <Image
-            src="/cineflash/home/Bazigaran/ArrowRight.png"
+            src={ARROW_ICON_SRC}
             alt="فلش چپ"
-            width={20}
-            height={20}
+            width={29}
+            height={23}
             unoptimized
-            className="h-5 w-5 scale-x-[-1]"
+            className="h-[23px] w-[29px] scale-x-[-1]"
           />
         </button>
+        
+        {/* Right arrow (visually "prev" in RTL) */}
+        <button
+          type="button"
+          onClick={() => scroll("right")}
+          className="
+            absolute left-[-120px] top-1/2 z-10 -translate-y-1/2
+            flex h-12 w-12 items-center justify-center
+            text-black transition-transform duration-200 hover:scale-110
+          "
+        >
+          <Image
+            src={ARROW_ICON_SRC}
+            alt="فلش راست"
+            width={29}
+            height={23}
+            unoptimized
+            className="h-[23px] w-[29px]"
+          />
+        </button>
+
+
 
         {/* Scrollable row */}
         <div className="w-full flex justify-center">
@@ -100,7 +102,7 @@ export default function FeaturedCard({ cards }: FeaturedCardProps) {
       style={{ scrollbarWidth: "none" }}
     >
       {featuredCards.map((actor, i) => (
-        <div key={i} className="px-2 py-[40px] flex items-center justify-center">
+        <div key={i} className="px-6 py-[40px] flex items-center justify-center">
           {actor.href ? (
             <Link
               href={actor.href}

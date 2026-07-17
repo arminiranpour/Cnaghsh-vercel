@@ -25,7 +25,7 @@ type OneTimePrice = {
 
 const cycleLabels: Record<PlanCycle, string> = {
   [PlanCycle.MONTHLY]: "ماهانه",
-  [PlanCycle.QUARTERLY]: "فصلی",
+  [PlanCycle.QUARTERLY]: "سه ماهه",
   [PlanCycle.YEARLY]: "سالانه",
 };
 

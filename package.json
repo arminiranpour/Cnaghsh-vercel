@@ -5,6 +5,7 @@
     "dev": "turbo run dev --parallel",
     "dev:infra": "docker compose -f infra/docker-compose.dev.yml up -d",
     "dev:infra:down": "docker compose -f infra/docker-compose.dev.yml down -v",
+    "postinstall": "node scripts/link-prisma-client.mjs",
     "prisma": "dotenv -e apps/web/.env -- pnpm --filter @app/web exec -- prisma",
     "db:reset": "pnpm prisma migrate reset --force && pnpm prisma generate",
     "build": "turbo run build",
@@ -25,6 +26,7 @@
     "jsdom": "^27.1.0",
     "prisma": "6.16.3",
     "server-only": "^0.0.1",
+    "svgo": "^4.0.2",
     "turbo": "^2.0.6",
     "typescript": "^5.6.2",
     "undici": "^7.16.0"
@@ -36,7 +38,6 @@
     "overrides": {
       "react-reconciler": "^0.31.0",
       "npm-run-path@*": "5.1.0"
-
     }
   },
   "packageManager": "pnpm@9.12.0"

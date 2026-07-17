@@ -136,6 +136,8 @@ export default async function DashboardProfilePage() {
         bio: null,
         cityName: undefined,
         likesCount: 0,
+        rating: 0,
+        skillLevel: 0,
         isSavedByMe: false,
         skills: [],
         languages: [],

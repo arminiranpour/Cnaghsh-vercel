@@ -1,6 +1,14 @@
 import { z } from "zod";
+import { MediaType } from "@prisma/client";
 
 import { uploadConfig } from "./config";
+import {
+  getExtensionFromFileName,
+  getMediaTypeFromMime,
+  isAllowedExtensionForType,
+  isAllowedMimeForType,
+  normalizeMime,
+} from "./formats";
 
 const uploadRequestSchema = z.object({
   ownerUserId: z.string().min(1).optional(),
@@ -17,7 +25,7 @@ export const parseUploadRequest = (input: unknown): UploadRequestInput => {
 };
 
 export const isAllowedMime = (contentType: string) => {
-  return uploadConfig.allowedTypes.has(contentType.trim().toLowerCase());
+  return uploadConfig.allowedTypes.has(normalizeMime(contentType));
 };
 
 export const isWithinSizeLimit = (sizeBytes: number) => {
@@ -31,4 +39,23 @@ export const validateDuration = (durationSec: number, planMax?: number) => {
   const baseLimit = uploadConfig.maxDurationSec;
   const limit = planMax && planMax > 0 ? Math.min(planMax, baseLimit) : baseLimit;
   return durationSec <= limit;
+};
+
+export const resolveExpectedMediaType = (contentType: string) => {
+  return getMediaTypeFromMime(contentType);
+};
+
+export const validateDeclaredMedia = (fileName: string, contentType: string): MediaType | null => {
+  const mediaType = resolveExpectedMediaType(contentType);
+  if (!mediaType) {
+    return null;
+  }
+  if (!isAllowedMimeForType(contentType, mediaType)) {
+    return null;
+  }
+  const extension = getExtensionFromFileName(fileName);
+  if (!extension || !isAllowedExtensionForType(fileName, mediaType)) {
+    return null;
+  }
+  return mediaType;
 };

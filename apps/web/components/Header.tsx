@@ -140,17 +140,12 @@ export default function Header({ variant = "static" }: HeaderProps) {
                     flexShrink: 0,
                   }}
                 >
-                  <Image
-                    src={
-                      useWhiteHeader
-                        ? "/cineflash/home/Header/menu-white.png"
-                        : "/cineflash/home/header/menu.png"
-                    }
-                    alt="Menu"
+                  <svg
                     width={MENU_W}
                     height={MENU_H}
-                    unoptimized
-                    priority
+                    viewBox="0 0 46 27"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
                     style={{
                       display: "block",
                       objectFit: "contain",
@@ -159,7 +154,11 @@ export default function Header({ variant = "static" }: HeaderProps) {
                       transform: hovered === "menu" ? "translateY(-1px)" : "none",
                       flexShrink: 0,
                     }}
-                  />
+                  >
+                    <rect x="0" y="0" width="46" height="5" rx="1" fill="currentColor" />
+                    <rect x="0" y="11" width="46" height="5" rx="1" fill="currentColor" />
+                    <rect x="0" y="22" width="46" height="5" rx="1" fill="currentColor" />
+                  </svg>
                 </button>
 
                 {/* User */}
@@ -180,17 +179,12 @@ export default function Header({ variant = "static" }: HeaderProps) {
                     flexShrink: 0,
                   }}
                 >
-                  <Image
-                    src={
-                      useWhiteHeader
-                        ? "/cineflash/home/Header/user-white.png"
-                        : "/cineflash/home/header/user.png"
-                    }
-                    alt="User"
+                  <svg
                     width={USER_W}
                     height={USER_H}
-                    unoptimized
-                    priority
+                    viewBox="0 0 56 60"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
                     style={{
                       display: "block",
                       transition: "filter .2s ease, transform .15s ease",
@@ -198,7 +192,10 @@ export default function Header({ variant = "static" }: HeaderProps) {
                       transform: hovered === "user" ? "translateY(-1px)" : "none",
                       flexShrink: 0,
                     }}
-                  />
+                  >
+                    <circle cx="28" cy="16" r="16" fill="currentColor" />
+                    <path d="M6 58C6 42 16 34 28 34C40 34 50 42 50 58" fill="currentColor" />
+                  </svg>
                 </Link>
               </div>
 
@@ -309,22 +306,21 @@ export default function Header({ variant = "static" }: HeaderProps) {
                 cursor: "pointer",
               }}
             >
-              <Image
-                src={
-                  useWhiteHeader
-                    ? "/cineflash/home/Header/menu-white.png"
-                    : "/cineflash/home/header/menu.png"
-                }
-                alt="Menu"
+              <svg
                 width={MENU_W}
                 height={MENU_H}
-                unoptimized
-                priority
+                viewBox="0 0 46 27"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
                 style={{
                   display: "block",
                   objectFit: "contain",
                 }}
-              />
+              >
+                <rect x="0" y="0" width="46" height="5" rx="1" fill="currentColor" />
+                <rect x="0" y="11" width="46" height="5" rx="1" fill="currentColor" />
+                <rect x="0" y="22" width="46" height="5" rx="1" fill="currentColor" />
+              </svg>
             </button>
 
             <Link

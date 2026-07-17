@@ -21,7 +21,7 @@ function formatNumber(value: number | undefined | null): string {
   return value.toLocaleString("fa-IR");
 }
 
-export function RightPane({ profile }: RightPaneProps) {
+export function RightPane({ profile, isOwner }: RightPaneProps) {
   const avatarSrc =
     profile.avatarUrl && profile.avatarUrl.trim()
       ? profile.avatarUrl
@@ -33,7 +33,15 @@ export function RightPane({ profile }: RightPaneProps) {
       level: Math.min(Math.max(lang.level, 0), LANGUAGE_LEVEL_MAX),
     }))
     .filter((lang) => lang.label && lang.level > 0);
-  const accents = (profile.accents ?? []).map((accent) => accent.trim()).filter(Boolean);
+  const accents = (profile.accents ?? [])
+    .map((accent) => ({
+      title: accent.title.trim(),
+      level:
+        typeof accent.level === "number"
+          ? Math.min(Math.max(accent.level, 0), LANGUAGE_LEVEL_MAX)
+          : 0,
+    }))
+    .filter((accent) => accent.title);
   const degrees = (profile.degrees ?? [])
     .map((degree) => ({
       degreeLevel: (degree?.degreeLevel ?? "").trim(),
@@ -167,7 +175,7 @@ export function RightPane({ profile }: RightPaneProps) {
           ۲۵۳۹
         </span>
         <Image
-          src="/cineflash/profile/star.png"
+          src="/cineflash/profile/editProfile/rightPane/star.svg"
           alt="star"
           width={19}
           height={18}
@@ -202,7 +210,7 @@ export function RightPane({ profile }: RightPaneProps) {
           }}
         >
           <Image
-            src="/cineflash/profile/location.png"
+            src="/cineflash/profile/editProfile/rightPane/location.svg"
             alt="location"
             width={12}
             height={12}
@@ -233,7 +241,7 @@ export function RightPane({ profile }: RightPaneProps) {
               }}
             >
               <Image
-                src="/cineflash/profile/education.png"
+                src="/cineflash/profile/editProfile/rightPane/education.svg"
                 alt="education"
                 width={22}
                 height={22}
@@ -312,7 +320,7 @@ export function RightPane({ profile }: RightPaneProps) {
           }}
         >
           <Image
-            src="/cineflash/profile/skills.png"
+            src="/cineflash/profile/editProfile/rightPane/skills.svg"
             alt="skills"
             width={13}
             height={13}
@@ -383,7 +391,7 @@ export function RightPane({ profile }: RightPaneProps) {
           }}
         >
           <Image
-            src="/cineflash/profile/language.png"
+            src="/cineflash/profile/editProfile/rightPane/language.svg"
             alt="language"
             width={13}
             height={13}
@@ -474,7 +482,7 @@ export function RightPane({ profile }: RightPaneProps) {
               }}
             >
               <Image
-                src="/cineflash/profile/accent.png"
+                src="/cineflash/profile/editProfile/rightPane/accent.svg"
                 alt="accent"
                 width={13}
                 height={13}
@@ -499,55 +507,74 @@ export function RightPane({ profile }: RightPaneProps) {
             >
               {accents.map((accent, index) => (
                 <div
-                  key={`${accent}-${index}`}
+                  key={`${accent.title}-${index}`}
                   style={{
                     display: "flex",
                     flexDirection: "row",
                     color: "#000000",
                     alignItems: "center",
-                    justifyContent: "flex-start",
-                    gap: 6,
-                    fontSize: 12,
+                    justifyContent: "space-between",
+                    gap: 8,
                   }}
                 >
+                  <span
+                    style={{
+                      fontSize: 12,
+                      minWidth: 50,
+                    }}
+                  >
+                    {accent.title}
+                  </span>
+
                   <div
                     style={{
-                      width: 4,
-                      height: 4,
-                      borderRadius: 1,
-                      backgroundColor: "#000000",
+                      display: "flex",
+                      flexDirection: "row-reverse",
+                      gap: 4,
                     }}
-                  />
-                  <span>{accent}</span>
+                  >
+                    {Array.from({ length: LANGUAGE_LEVEL_MAX }).map((_, idx) => (
+                      <span
+                        key={idx}
+                        style={{
+                          width: 6,
+                          height: 6,
+                          borderRadius: "999px",
+                          backgroundColor:
+                            idx < accent.level ? "#000000" : "#C6C6C6",
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               ))}
             </div>
           </>
         ) : null}
 
-
-        {/* دکمه انتخاب این بازیگر */}
-        <button
-          type="button"
-          style={{
-            width: 144,
-            height: 29,
-            borderRadius: 19,
-            border: "none",
-            backgroundColor: GREEN,
-            color: "#FFFFFF",
-            fontSize: 14,
-            fontWeight: 400,
-            cursor: "pointer",
-            margin: "0 auto",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            whiteSpace: "nowrap",
-          }}
-        >
-          انتخاب این بازیگر
-        </button>
+        {!isOwner ? (
+          <button
+            type="button"
+            style={{
+              width: 144,
+              height: 29,
+              borderRadius: 19,
+              border: "none",
+              backgroundColor: GREEN,
+              color: "#FFFFFF",
+              fontSize: 14,
+              fontWeight: 400,
+              cursor: "pointer",
+              margin: "0 auto",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              whiteSpace: "nowrap",
+            }}
+          >
+            انتخاب این بازیگر
+          </button>
+        ) : null}
       </div>
    
       {/* ــــــــــــــــــــــــــــــــــــــــــــــــ

@@ -1,16 +1,11 @@
-import { randomUUID } from "node:crypto";
-
-import { MediaStatus, MediaType, MediaVisibility } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
 import type { SessionUser } from "next-auth";
 
 import { requireAdminSession } from "@/lib/auth/admin";
 import { NO_STORE_HEADERS } from "@/lib/http";
+import { createReadyImageMediaAsset, ImageAssetProcessingError } from "@/lib/media/media-asset-images";
 import { prisma } from "@/lib/prisma";
-import { getOriginalKey } from "@/lib/storage/keys";
-import { putBuffer } from "@/lib/storage/s3";
-import { resolveBucketForVisibility } from "@/lib/storage/visibility";
 
 type CoverResponse = {
   ok: boolean;
@@ -19,15 +14,6 @@ type CoverResponse = {
 };
 
 const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
-const IMAGE_MIME_EXTENSIONS: Record<string, string> = {
-  "image/jpeg": "jpg",
-  "image/jpg": "jpg",
-  "image/png": "png",
-  "image/webp": "webp",
-};
-
-const normalizeMime = (value: string) => value.split(";")[0]?.trim().toLowerCase() ?? "";
-
 const success = (payload: CoverResponse) =>
   NextResponse.json(payload, { headers: NO_STORE_HEADERS });
 
@@ -75,12 +61,6 @@ export async function POST(
     return failure(400, "FILE_TOO_LARGE");
   }
 
-  const normalizedType = normalizeMime(file.type);
-  const extension = IMAGE_MIME_EXTENSIONS[normalizedType];
-  if (!extension) {
-    return failure(400, "UNSUPPORTED_MEDIA_TYPE");
-  }
-
   const challenge = await prisma.challenge.findUnique({
     where: { id: params.challengeId },
     select: { id: true },
@@ -91,22 +71,12 @@ export async function POST(
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const mediaId = randomUUID();
-    const key = getOriginalKey(admin.id, mediaId, extension);
-    const bucket = resolveBucketForVisibility("public");
-    await putBuffer(bucket, key, buffer, normalizedType);
-    const media = await prisma.mediaAsset.create({
-      data: {
-        id: mediaId,
-        type: MediaType.image,
-        status: MediaStatus.ready,
-        visibility: MediaVisibility.public,
-        ownerUserId: admin.id,
-        sourceKey: key,
-        outputKey: key,
-        sizeBytes: BigInt(file.size),
-      },
-      select: { id: true },
+    const media = await createReadyImageMediaAsset({
+      ownerUserId: admin.id,
+      buffer,
+      declaredMime: file.type,
+      visibility: "public",
+      sizeBytes: file.size,
     });
 
     await prisma.challenge.update({
@@ -121,6 +91,9 @@ export async function POST(
 
     return success({ ok: true, mediaId: media.id });
   } catch (error) {
+    if (error instanceof ImageAssetProcessingError) {
+      return failure(400, "UNSUPPORTED_MEDIA_TYPE");
+    }
     return failure(500, "UPLOAD_FAILED");
   }
 }

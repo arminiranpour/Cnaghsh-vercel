@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Image from "next/image";
 
 import { ListAnalyticsTracker } from "@/components/analytics/ListAnalyticsTracker";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -45,8 +44,13 @@ const SORT_OPTIONS = [
 
 type SearchParams = Record<string, string | string[] | undefined>;
 
-export async function generateMetadata({ searchParams }: { searchParams: SearchParams }): Promise<Metadata> {
-  const canonical = buildCanonical("/profiles", searchParams);
+export async function generateMetadata({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}): Promise<Metadata> {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const canonical = buildCanonical("/profiles", resolvedSearchParams);
 
   return {
     title: PAGE_TITLE,
@@ -69,13 +73,18 @@ export async function generateMetadata({ searchParams }: { searchParams: SearchP
   };
 }
 
-export default async function ProfilesPage({ searchParams }: { searchParams: SearchParams }) {
-  const normalized = normalizeSearchParams(searchParams);
-  const parsedSkills = parseSkillsSearchParam(searchParams);
+export default async function ProfilesPage({
+  searchParams,
+}: {
+  searchParams?: Promise<SearchParams>;
+}) {
+  const resolvedSearchParams = searchParams ? await searchParams : {};
+  const normalized = normalizeSearchParams(resolvedSearchParams);
+  const parsedSkills = parseSkillsSearchParam(resolvedSearchParams);
   const normalizedSkills = parsedSkills.length ? parsedSkills : normalized.skills;
 
   const [data, cities] = await Promise.all([
-    fetchProfilesOrchestrated(searchParams),
+    fetchProfilesOrchestrated(resolvedSearchParams),
     getCities(),
   ]);
 
@@ -147,16 +156,7 @@ export default async function ProfilesPage({ searchParams }: { searchParams: Sea
 
   return (
     <div className="relative w-full min-h-screen" dir="rtl">
-      <div className="absolute inset-0 -z-10">
-        <Image
-          src="/profiles/concretewall-bg.png"
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-          className="object-cover"
-        />
-      </div>
+      <div className="absolute inset-0 -z-10 bg-[#E5E5E5]" />
 
       <div className="mx-auto w-full max-w-6xl px-4 py-10 pt-[120px]">
       <ListAnalyticsTracker

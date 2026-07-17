@@ -3,6 +3,7 @@
 
 import Link from "next/link";
 
+import { buildResponsiveImageSrcSet } from "@/lib/media/responsive-images";
 import styles from "../movies.module.css";
 
 export type MovieCardItem = {
@@ -17,7 +18,13 @@ export function MovieCard({ movie }: { movie: MovieCardItem }) {
   return (
     <div className={styles.movieCard} dir="rtl">
       {movie.posterCardPreviewUrl ? (
-        <img src={movie.posterCardPreviewUrl} alt={movie.titleFa} className={styles.poster} />
+        <img
+          src={movie.posterCardPreviewUrl}
+          srcSet={buildResponsiveImageSrcSet(movie.posterCardPreviewUrl)}
+          sizes="(max-width: 768px) 50vw, (max-width: 1280px) 33vw, 25vw"
+          alt={movie.titleFa}
+          className={styles.poster}
+        />
       ) : (
         <div
           className={styles.poster}

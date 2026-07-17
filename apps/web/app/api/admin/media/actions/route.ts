@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { requireAdminSession } from "@/lib/auth/admin";
 import { NO_STORE_HEADERS } from "@/lib/http";
+import { listDerivedOutputKeys } from "@/lib/media/derived-storage";
 import { MediaTranscodeDisabledError, queueMediaTranscode } from "@/lib/media/transcode";
 import { prisma } from "@/lib/prisma";
 import { isMediaTranscodeEnabled } from "@/lib/queues/mediaTranscode.queue";
@@ -39,11 +40,15 @@ const handleRequeue = async (mediaId: string) => {
 
   const media = await prisma.mediaAsset.findUnique({
     where: { id: mediaId },
-    select: { id: true },
+    select: { id: true, type: true },
   });
 
   if (!media) {
     return failure(404, "MEDIA_NOT_FOUND");
+  }
+
+  if (media.type !== "video" && media.type !== "audio") {
+    return failure(400, "MEDIA_TYPE_NOT_REQUEUEABLE");
   }
 
   try {
@@ -102,6 +107,7 @@ const handleDelete = async (mediaId: string) => {
     where: { id: mediaId },
     select: {
       id: true,
+      type: true,
       sourceKey: true,
       outputKey: true,
       posterKey: true,
@@ -124,11 +130,8 @@ const handleDelete = async (mediaId: string) => {
   deleteTasks.push(
     remove(privateBucket, media.sourceKey).catch(() => undefined),
   );
-  if (media.outputKey) {
-    deleteTasks.push(remove(outputBucket, media.outputKey).catch(() => undefined));
-  }
-  if (media.posterKey) {
-    deleteTasks.push(remove(outputBucket, media.posterKey).catch(() => undefined));
+  for (const key of listDerivedOutputKeys(media)) {
+    deleteTasks.push(remove(outputBucket, key).catch(() => undefined));
   }
   await Promise.allSettled(deleteTasks);
 

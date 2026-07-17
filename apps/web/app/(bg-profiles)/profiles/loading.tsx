@@ -1,22 +1,10 @@
-import Image from "next/image";
-
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export default function ProfilesLoading() {
   return (
     <div className="relative w-full min-h-screen" dir="rtl">
-      <div className="absolute inset-0 -z-10">
-        <Image
-          src="/profiles/concretewall-bg.png"
-          alt=""
-          fill
-          sizes="100vw"
-          priority
-          className="object-cover"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-black" />
-      </div>
+      <div className="absolute inset-0 -z-10 bg-[#E5E5E5]" />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-8 px-4 py-10 pt-[100px]">
         <header className="space-y-3">

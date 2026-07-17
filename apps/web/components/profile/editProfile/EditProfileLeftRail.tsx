@@ -1,7 +1,6 @@
 "use client";
 
-import Image from "next/image";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 export type EditProfileTabId =
   | "portfolio"
@@ -12,65 +11,65 @@ export type EditProfileTabId =
   | "subscription"
   | "settings";
 
-const LEFT_PANE_ICON_BASE = "/cineflash/profile/editProfile/leftPane";
-const grayFilter =
-  "brightness(0) saturate(100%) invert(39%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%)";
-const whiteFilter = "brightness(0) invert(1)";
+const LEFT_PANE_ICON_BASE = "/cineflash/Profile/editProfile/leftPane";
 
-const NAV_ITEMS: {
+type NavIconRenderProps = {
+  isActive: boolean;
+  inactiveColor: string;
+  size: number;
+};
+
+type NavItem = {
   id: EditProfileTabId;
   label: string;
-  iconSrcActive?: string;
-  iconSrcInactive?: string;
-  renderIcon?: (isActive: boolean) => ReactNode;
+  iconSrc?: string;
+  renderIcon?: (props: NavIconRenderProps) => ReactNode;
   isEnabled: boolean;
-}[] = [
+};
+
+const NAV_ITEMS: NavItem[] = [
   {
     id: "portfolio",
     label: "پورتفولیو",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/portfolio-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/kindpng_1491203.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/icons8-portfolio-96 (1) 1.svg`,
     isEnabled: true,
   },
   {
     id: "messages",
     label: "صندوق پیام",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/message-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/message-gray.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/chat 1.svg`,
     isEnabled: false,
   },
   {
     id: "saved",
     label: "آرشیو",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/saved-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/saved-gray.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/black-save-instagram-18316 1.svg`,
     isEnabled: true,
   },
   {
     id: "challenges",
     label: "چالش و رویداد",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/challenges-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/challenges-gray.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/kindpng_1491200 1.svg`,
     isEnabled: true,
   },
   {
     id: "courses",
     label: "کلاس و آموزش",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/courses-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/courses-gray.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/courses.svg`,
     isEnabled: true,
   },
   {
     id: "subscription",
     label: "اشتراک",
-    iconSrcActive: `${LEFT_PANE_ICON_BASE}/subscription-white.png`,
-    iconSrcInactive: `${LEFT_PANE_ICON_BASE}/subscription-gray.png`,
+    iconSrc: `${LEFT_PANE_ICON_BASE}/subscription-management-2 1.svg`,
     isEnabled: true,
   },
   {
     id: "settings",
     label: "تنظیمات",
-    renderIcon: (isActive) => <SettingsIcon active={isActive} />,
+    renderIcon: ({ inactiveColor, isActive }) => (
+      <SettingsIcon active={isActive} inactiveColor={inactiveColor} />
+    ),
     isEnabled: true,
   },
 ];
@@ -109,12 +108,6 @@ export function EditProfileLeftRail({ activeTab, onTabChange }: EditProfileLeftR
           {NAV_ITEMS.map((item) => {
             const isActive = item.id === activeTab;
             const isEnabled = item.isEnabled;
-            const iconSrc =
-              item.iconSrcActive && item.iconSrcInactive
-                ? isActive
-                  ? item.iconSrcActive
-                  : item.iconSrcInactive
-                : null;
 
             return (
               <button
@@ -144,18 +137,11 @@ export function EditProfileLeftRail({ activeTab, onTabChange }: EditProfileLeftR
                   flexShrink: 0,
                 }}
               >
-                {item.renderIcon ? (
-                  item.renderIcon(isActive)
-                ) : iconSrc ? (
-                  <div style={{ width: 30, height: 30, position: "relative" }}>
-                    <Image
-                      src={iconSrc}
-                      alt={item.label}
-                      fill
-                      style={{ objectFit: "contain" }}
-                    />
-                  </div>
-                ) : null}
+                {renderNavItemIcon(item, {
+                  isActive,
+                  inactiveColor: "#8B8B8B",
+                  size: 30,
+                })}
                 <span
                   style={{
                     fontFamily: "IRANSans, sans-serif",
@@ -204,25 +190,11 @@ export function EditProfileLeftRail({ activeTab, onTabChange }: EditProfileLeftR
                   opacity: isEnabled ? 1 : 0.6,
                 }}
               >
-                {item.renderIcon ? (
-                  item.renderIcon(isActive)
-                ) : item.iconSrcInactive ? (
-                  <div
-                    style={{
-                      width: 24,
-                      height: 24,
-                      position: "relative",
-                      filter: isActive ? whiteFilter : grayFilter,
-                    }}
-                  >
-                    <Image
-                      src={item.iconSrcInactive}
-                      alt={item.label}
-                      fill
-                      style={{ objectFit: "contain" }}
-                    />
-                  </div>
-                ) : null}
+                {renderNavItemIcon(item, {
+                  isActive,
+                  inactiveColor: "#7C7C7C",
+                  size: 24,
+                })}
 
                 <span
                   style={{
@@ -247,8 +219,51 @@ export function EditProfileLeftRail({ activeTab, onTabChange }: EditProfileLeftR
   );
 }
 
-function SettingsIcon({ active }: { active: boolean }) {
-  const stroke = active ? "#FFFFFF" : "#8B8B8B";
+function renderNavItemIcon(item: NavItem, props: NavIconRenderProps) {
+  if (item.renderIcon) {
+    return item.renderIcon(props);
+  }
+
+  if (!item.iconSrc) {
+    return null;
+  }
+
+  return (
+    <MaskedIcon
+      src={item.iconSrc}
+      color={props.isActive ? "#FFFFFF" : props.inactiveColor}
+      size={props.size}
+    />
+  );
+}
+
+function MaskedIcon({ color, size, src }: { color: string; size: number; src: string }) {
+  const style: CSSProperties = {
+    width: size,
+    height: size,
+    display: "block",
+    backgroundColor: color,
+    WebkitMaskImage: `url("${src}")`,
+    maskImage: `url("${src}")`,
+    WebkitMaskRepeat: "no-repeat",
+    maskRepeat: "no-repeat",
+    WebkitMaskPosition: "center",
+    maskPosition: "center",
+    WebkitMaskSize: "contain",
+    maskSize: "contain",
+  };
+
+  return <span aria-hidden="true" style={style} />;
+}
+
+function SettingsIcon({
+  active,
+  inactiveColor,
+}: {
+  active: boolean;
+  inactiveColor: string;
+}) {
+  const stroke = active ? "#FFFFFF" : inactiveColor;
 
   return (
     <svg

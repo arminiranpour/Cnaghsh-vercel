@@ -8,7 +8,7 @@ type Props = {
 
 export function ProfilePageLayout({ children }: Props) {
   return (
-    <section className="relative min-h-screen w-full overflow-x-hidden" dir="rtl">
+    <section className="relative min-h-screen w-full overflow-x-clip" dir="rtl">
       {children}
     </section>
   );

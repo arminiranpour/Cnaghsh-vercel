@@ -55,7 +55,7 @@ const validateLinking = async (
   if (hasProduct && productId) {
     const product = await prisma.product.findUnique({ where: { id: productId } });
 
-    if (!product || product.type !== ProductType.JOB_POST) {
+    if (!product || product.type === ProductType.SUBSCRIPTION) {
       return { error: "مقدار نامعتبر", planId: null, productId: null };
     }
 

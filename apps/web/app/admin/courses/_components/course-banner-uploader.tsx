@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { IMAGE_ACCEPT } from "@/lib/media/formats";
 
 import { removeCourseBannerAction, uploadCourseBannerAction } from "../actions";
 
@@ -17,7 +18,7 @@ type CourseBannerUploaderProps = {
   bannerMediaAssetId: string | null;
 };
 
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp";
+const ACCEPTED_TYPES = IMAGE_ACCEPT;
 
 export function CourseBannerUploader({
   courseId,
@@ -69,7 +70,7 @@ export function CourseBannerUploader({
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Course Banner</h2>
         <p className="text-sm text-muted-foreground">
-          Upload a JPG, PNG, or WEBP image.
+          Upload a JPG, PNG, WEBP, or HEIC image.
         </p>
       </div>
       {bannerUrl ? (

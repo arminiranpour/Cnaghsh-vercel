@@ -5,11 +5,16 @@ import * as Sentry from "@sentry/nextjs";
 import { NextRequest, NextResponse } from "next/server";
 
 import { getServerAuthSession } from "@/lib/auth/session";
-import { isDev } from "@/lib/env";
 import { NO_STORE_HEADERS, safeJson } from "@/lib/http";
 import { logError, logInfo } from "@/lib/logging";
 import { prisma } from "@/lib/prisma";
 import { uploadConfig } from "@/lib/media/config";
+import {
+  getExtensionForMime,
+  getMediaTypeFromMime,
+  normalizeMime,
+} from "@/lib/media/formats";
+import { createReadyImageMediaAsset } from "@/lib/media/media-asset-images";
 import { MediaTranscodeDisabledError, queueMediaTranscode } from "@/lib/media/transcode";
 import {
   canUploadVideo,
@@ -22,6 +27,7 @@ import {
   isWithinSizeLimit,
   parseUploadRequest,
   validateDuration,
+  validateDeclaredMedia,
 } from "@/lib/media/validation";
 import { isMediaTranscodeEnabled } from "@/lib/queues/mediaTranscode.queue";
 import { getDailyBytes, assertWithinRateLimit, trackDailyBytes, RateLimitExceededError } from "@/lib/rate-limit";
@@ -47,22 +53,6 @@ type MultipartMetadata = UploadMetadata & { file: File };
 type ErrorTuple = { status: number; code: "INVALID_MIME" | "TOO_LARGE" | "RATE_LIMITED" | "QUOTA_EXCEEDED" | "DURATION_EXCEEDED" | "DEMO_DISABLED" | "UNKNOWN"; message: string };
 
 const privateBucket = resolveBucketForVisibility("private");
-
-const MIME_EXTENSIONS: Record<string, string> = {
-  "video/mp4": "mp4",
-  "video/quicktime": "mov",
-  "video/webm": "webm",
-  "audio/mpeg": "mp3",
-  "audio/mp3": "mp3",
-  "audio/wav": "wav",
-  "audio/x-wav": "wav",
-  "audio/webm": "webm",
-  "audio/ogg": "ogg",
-  "audio/mp4": "m4a",
-  "audio/aac": "aac",
-};
-
-const normalizeMime = (value: string) => value.split(";")[0]?.trim().toLowerCase() ?? "";
 
 const getClientIp = (request: NextRequest) => {
   const forwarded = request.headers.get("x-forwarded-for");
@@ -219,7 +209,9 @@ const prepareUpload = async (
   fileBuffer?: Buffer,
 ) => {
   const normalizedMime = normalizeMime(metadata.contentType);
-  const isAudio = normalizedMime.startsWith("audio/");
+  const mediaType = validateDeclaredMedia(metadata.fileName, normalizedMime);
+  const isAudio = mediaType === MediaType.audio;
+  const isImage = mediaType === MediaType.image;
 
   const MAX_AUDIO_BYTES = 10 * 1024 * 1024;
   if (isAudio && metadata.sizeBytes > MAX_AUDIO_BYTES) {
@@ -237,7 +229,7 @@ const prepareUpload = async (
       },
     );
   }
-  if (!normalizedMime || !isAllowedMime(normalizedMime)) {
+  if (!normalizedMime || !isAllowedMime(normalizedMime) || !mediaType) {
     return respondWithError(
       {
         status: 415,
@@ -272,12 +264,12 @@ const prepareUpload = async (
     return quotaError;
   }
 
-  const planError = await evaluatePlanLimits(userId, metadata);
+  const planError = mediaType === MediaType.image ? null : await evaluatePlanLimits(userId, metadata);
   if (planError) {
     return planError;
   }
 
-  const extension = MIME_EXTENSIONS[normalizedMime];
+  const extension = getExtensionForMime(normalizedMime);
   if (!extension) {
     return respondWithError(
       {
@@ -293,13 +285,12 @@ const prepareUpload = async (
     );
   }
 
-  const mediaType = isAudio ? MediaType.audio : MediaType.video;
-  if (mediaType === MediaType.video && !isMediaTranscodeEnabled()) {
+  if ((mediaType === MediaType.video || mediaType === MediaType.audio) && !isMediaTranscodeEnabled()) {
     return respondWithError(
       {
         status: 503,
         code: "DEMO_DISABLED",
-        message: "آپلود و پردازش ویدیو در نسخه دمو غیرفعال است.",
+        message: "پردازش این رسانه در نسخه دمو غیرفعال است.",
       },
       {
         userId,
@@ -308,44 +299,52 @@ const prepareUpload = async (
       },
     );
   }
+
+  if (mode === "multipart" && fileBuffer && isImage) {
+    const media = await createReadyImageMediaAsset({
+      ownerUserId: userId,
+      buffer: fileBuffer,
+      declaredMime: normalizedMime,
+      visibility: MediaVisibility.private,
+      sizeBytes: metadata.sizeBytes,
+    });
+
+    await trackDailyBytes(userId, metadata.sizeBytes);
+
+    logInfo("upload.init.image_ready_multipart", {
+      userId,
+      mediaId: media.id,
+      contentType: normalizedMime,
+      sizeBytes: metadata.sizeBytes,
+    });
+
+    return successResponse(media.id, media.sourceKey, mode);
+  }
+
   const media = await createMediaAssetRecord(userId, extension, metadata.sizeBytes, mediaType);
 
   if (mode === "multipart" && fileBuffer) {
     await putBuffer(privateBucket, media.sourceKey, fileBuffer, normalizedMime, cacheOriginal());
-    if (mediaType === MediaType.audio) {
-      await prisma.mediaAsset.update({
-        where: { id: media.id },
-        data: {
-          status: MediaStatus.ready,
-        },
-      });
-      logInfo("upload.init.audio_ready_multipart", {
-        userId,
-        mediaId: media.id,
-        contentType: normalizedMime,
-      });
-    } else {
-      try {
-        await queueMediaTranscode(media.id);
-      } catch (error) {
-        if (error instanceof MediaTranscodeDisabledError) {
-          await prisma.mediaAsset.delete({ where: { id: media.id } }).catch(() => undefined);
-          return respondWithError(
-            {
-              status: 503,
-              code: "DEMO_DISABLED",
-              message: "آپلود و پردازش ویدیو در نسخه دمو غیرفعال است.",
-            },
-            {
-              userId,
-              mediaId: media.id,
-              reason: "media_transcode_disabled",
-              mode,
-            },
-          );
-        }
-        throw error;
+    try {
+      await queueMediaTranscode(media.id);
+    } catch (error) {
+      if (error instanceof MediaTranscodeDisabledError) {
+        await prisma.mediaAsset.delete({ where: { id: media.id } }).catch(() => undefined);
+        return respondWithError(
+          {
+            status: 503,
+            code: "DEMO_DISABLED",
+            message: "پردازش این رسانه در نسخه دمو غیرفعال است.",
+          },
+          {
+            userId,
+            mediaId: media.id,
+            reason: "media_transcode_disabled",
+            mode,
+          },
+        );
       }
+      throw error;
     }
   }
 
@@ -372,18 +371,6 @@ const parseMultipartMetadata = async (
   request: NextRequest,
   userId: string,
 ): Promise<{ metadata?: MultipartMetadata; error?: NextResponse }> => {
-  if (!isDev) {
-    return {
-      error: respondWithError(
-        {
-          status: 405,
-          code: "UNKNOWN",
-          message: "این حالت در محیط فعلی فعال نیست.",
-        },
-        { userId, reason: "multipart_disabled" },
-      ),
-    };
-  }
   const formData = await request.formData();
   const file = formData.get("file");
   if (!(file instanceof File)) {
@@ -478,15 +465,27 @@ export async function POST(request: NextRequest) {
         );
       }
       const sniffed = await sniffMimeFromFile(metadata.file);
-      if (sniffed && sniffed !== normalizedMime) {
-        return respondWithError(
-          {
-            status: 415,
-            code: "INVALID_MIME",
-            message: "نوع فایل مجاز نیست.",
-          },
-          { userId: ownerUserId, reason: "sniff_mismatch", mode: "multipart", sniffed },
-        );
+      if (sniffed) {
+        const declaredType = getMediaTypeFromMime(normalizedMime);
+        const sniffedType = getMediaTypeFromMime(sniffed);
+        const sameFamily = declaredType && sniffedType && declaredType === sniffedType;
+        const equivalentHeif =
+          (normalizedMime === "image/heic" || normalizedMime === "image/heif")
+          && (sniffed === "image/heic" || sniffed === "image/heif");
+        const equivalentJpeg =
+          (normalizedMime === "image/jpeg" || normalizedMime === "image/jpg")
+          && sniffed === "image/jpeg";
+
+        if (!sameFamily || (!equivalentHeif && !equivalentJpeg && sniffed !== normalizedMime)) {
+          return respondWithError(
+            {
+              status: 415,
+              code: "INVALID_MIME",
+              message: "نوع فایل مجاز نیست.",
+            },
+            { userId: ownerUserId, reason: "sniff_mismatch", mode: "multipart", sniffed },
+          );
+        }
       }
       const buffer = Buffer.from(await metadata.file.arrayBuffer());
       return prepareUpload(

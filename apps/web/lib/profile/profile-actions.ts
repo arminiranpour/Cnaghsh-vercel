@@ -231,6 +231,8 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
       bio: hasField("bio"),
       birthDate: hasField("birthDate"),
       introVideoMediaId: hasField("introVideoMediaId"),
+      rating: hasField("rating"),
+      skillLevel: hasField("skillLevel"),
     };
 
     const baseValues: Partial<Record<keyof z.infer<typeof personalInfoSchema>, unknown>> =
@@ -268,6 +270,12 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
     }
     if (provided.introVideoMediaId) {
       baseValues.introVideoMediaId = getString("introVideoMediaId");
+    }
+    if (provided.rating) {
+      baseValues.rating = formData.get("rating");
+    }
+    if (provided.skillLevel) {
+      baseValues.skillLevel = formData.get("skillLevel");
     }
 
     let uploadedAvatarUrl: string | null = null;
@@ -425,6 +433,14 @@ export async function upsertPersonalInfo(formData: FormData): Promise<PersonalIn
       updateData.cityId = cleanedCityId;
       createData.cityId = cleanedCityId ?? null;
     }
+    if (provided.rating && typeof data.rating === "number") {
+      updateData.rating = data.rating;
+      createData.rating = data.rating;
+    }
+    if (provided.skillLevel && typeof data.skillLevel === "number") {
+      updateData.skillLevel = data.skillLevel;
+      createData.skillLevel = data.skillLevel;
+    }
     if (provided.avatarUrl && typeof data.avatarUrl === "string") {
       updateData.avatarUrl = data.avatarUrl;
       createData.avatarUrl = data.avatarUrl;
@@ -552,6 +568,7 @@ export async function updateLanguages(formData: FormData): Promise<LanguagesActi
           typeof entry.duration === "number" && Number.isFinite(entry.duration)
             ? entry.duration
             : null;
+        const fileName = entry.fileName?.trim() ?? "";
 
         return {
           label: entry.label.trim(),
@@ -561,6 +578,7 @@ export async function updateLanguages(formData: FormData): Promise<LanguagesActi
                 mediaId,
                 url,
                 duration,
+                fileName: fileName || null,
               }
             : {}),
         };
@@ -628,6 +646,7 @@ export async function updateAccents(formData: FormData): Promise<AccentsActionRe
 
     const cleanedAccents: Array<{
       title: string;
+      level?: number | null;
       mediaId?: string;
       url?: string;
       duration?: number | null;
@@ -671,6 +690,11 @@ export async function updateAccents(formData: FormData): Promise<AccentsActionRe
         typeof (entry as { mediaId?: unknown }).mediaId === "string"
           ? ((entry as { mediaId?: string }).mediaId ?? "").trim()
           : "";
+      const level =
+        typeof (entry as { level?: unknown }).level === "number" &&
+        Number.isInteger((entry as { level?: number }).level)
+          ? ((entry as { level?: number }).level ?? null)
+          : null;
       const url =
         typeof (entry as { url?: unknown }).url === "string"
           ? ((entry as { url?: string }).url ?? "").trim()
@@ -680,15 +704,25 @@ export async function updateAccents(formData: FormData): Promise<AccentsActionRe
         Number.isFinite((entry as { duration?: number }).duration)
           ? (entry as { duration?: number }).duration
           : null;
+      const fileName =
+        typeof (entry as { fileName?: unknown }).fileName === "string"
+          ? ((entry as { fileName?: string }).fileName ?? "").trim()
+          : "";
 
       seen.add(dedupeKey);
       cleanedAccents.push({
         title,
+        ...(level
+          ? {
+              level,
+            }
+          : {}),
         ...(mediaId && url
           ? {
               mediaId,
               url,
               duration,
+              fileName: fileName || null,
             }
           : {}),
       });
@@ -1058,6 +1092,7 @@ export async function updateVoices(formData: FormData): Promise<VoicesActionResu
         url: entry.url.trim(),
         title: entry.title?.trim() || null,
         duration: typeof entry.duration === "number" ? entry.duration : null,
+        fileName: entry.fileName?.trim() || null,
       })) ?? [];
 
     const previous = await prisma.profile.findUnique({

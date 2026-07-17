@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { VIDEO_ACCEPT } from "@/lib/media/formats";
 
 type ChallengeInstructionVideoUploaderProps = {
   challengeId: string;
@@ -15,7 +16,7 @@ type ChallengeInstructionVideoUploaderProps = {
   videoUrl: string | null;
 };
 
-const ACCEPTED_TYPES = "video/mp4,video/webm,video/quicktime";
+const ACCEPTED_TYPES = VIDEO_ACCEPT;
 
 const resolveErrorMessage = (error: string | undefined, fallback: string) => {
   if (!error) {
@@ -28,7 +29,9 @@ const resolveErrorMessage = (error: string | undefined, fallback: string) => {
     case "FILE_TOO_LARGE":
       return "حجم ویدیو بیش از حد مجاز است.";
     case "UNSUPPORTED_MEDIA_TYPE":
-      return "فقط ویدیوهای MP4، WEBM و MOV مجاز هستند.";
+      return "فقط ویدیوهای MP4، MOV، WEBM و MKV مجاز هستند.";
+    case "TRANSCODE_DISABLED":
+      return "پردازش ویدیو در حال حاضر در دسترس نیست.";
     case "UNAUTHORIZED":
       return "اجازه دسترسی ندارید.";
     case "CHALLENGE_NOT_FOUND":
@@ -127,6 +130,10 @@ export function ChallengeInstructionVideoUploader({
           >
             باز کردن ویدیو در صفحه جدید
           </a>
+        </div>
+      ) : instructionVideoMediaAssetId ? (
+        <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">
+          ویدیو بارگذاری شده و در حال پردازش است.
         </div>
       ) : (
         <div className="rounded-md border border-dashed border-border p-6 text-sm text-muted-foreground">

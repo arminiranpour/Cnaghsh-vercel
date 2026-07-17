@@ -25,6 +25,43 @@ function isValidAvatarUrl(value: string): boolean {
   }
 }
 
+function normalizeIntegerFieldInput(value: unknown) {
+  if (value === null || value === undefined) {
+    return undefined;
+  }
+
+  if (typeof value === "number") {
+    return value;
+  }
+
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) {
+      return Number.NaN;
+    }
+
+    if (!/^-?\d+$/.test(trimmed)) {
+      return Number.NaN;
+    }
+
+    return Number(trimmed);
+  }
+
+  return Number.NaN;
+}
+
+function optionalFiniteIntegerField(message: string) {
+  return z
+    .preprocess(
+      normalizeIntegerFieldInput,
+      z
+        .number({ invalid_type_error: message })
+        .int(message)
+        .refine(Number.isFinite, message),
+    )
+    .optional();
+}
+
 export const personalInfoSchema = z.object({
   firstName: z.string().trim().min(1, "لطفاً نام را وارد کنید.").max(191),
   lastName: z.string().trim().min(1, "لطفاً نام خانوادگی را وارد کنید.").max(191),
@@ -60,6 +97,8 @@ export const personalInfoSchema = z.object({
     .max(191, INTRO_VIDEO_ERROR)
     .optional()
     .or(z.literal("")),
+  rating: optionalFiniteIntegerField("امتیاز پروفایل باید یک عدد صحیح معتبر باشد."),
+  skillLevel: optionalFiniteIntegerField("سطح مهارت باید یک عدد صحیح معتبر باشد."),
 });
 
 export const skillsSchema = z.object({
@@ -133,15 +172,24 @@ const languageEntrySchema = z.object({
   mediaId: z.string().trim().max(191).optional().or(z.literal("")),
   url: z.string().trim().url().optional().or(z.literal("")),
   duration: z.number().nonnegative().optional().nullable(),
+  fileName: z.string().trim().max(255).optional().nullable().or(z.literal("")),
 });
 
 export const languagesSchema = z.array(languageEntrySchema).optional().default([]);
 
 export const accentEntrySchema = z.object({
   title: z.string().trim().min(1, "لطفاً عنوان لهجه را وارد کنید.").max(100),
+  level: z
+    .coerce.number()
+    .int()
+    .min(1, "سطح باید بین ۱ تا ۵ باشد.")
+    .max(LANGUAGE_LEVEL_MAX, "سطح باید بین ۱ تا ۵ باشد.")
+    .optional()
+    .nullable(),
   mediaId: z.string().trim().max(191).optional().or(z.literal("")),
   url: z.string().trim().url().optional().or(z.literal("")),
   duration: z.number().nonnegative().optional().nullable(),
+  fileName: z.string().trim().max(255).optional().nullable().or(z.literal("")),
 });
 
 export const accentsSchema = z
@@ -179,6 +227,7 @@ export const voiceEntrySchema = z.object({
   url: z.string().url(),
   title: z.string().trim().max(200).optional().nullable(),
   duration: z.number().nonnegative().optional().nullable(),
+  fileName: z.string().trim().max(255).optional().nullable().or(z.literal("")),
 });
 
 export const voicesSchema = z.array(voiceEntrySchema).optional().nullable();

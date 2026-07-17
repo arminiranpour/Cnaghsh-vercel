@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import { writeFile, rm } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
+
 import * as Sentry from "@sentry/nextjs";
 import { MediaStatus, MediaType } from "@prisma/client";
 import { NextRequest, NextResponse } from "next/server";
@@ -5,24 +10,50 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerAuthSession } from "@/lib/auth/session";
 import { NO_STORE_HEADERS } from "@/lib/http";
 import { logError, logInfo } from "@/lib/logging";
+import { finalizeStoredImageMediaAsset, ImageAssetProcessingError } from "@/lib/media/media-asset-images";
+import { probeAvFile } from "@/lib/media/server-probe";
 import { MediaTranscodeDisabledError, queueMediaTranscode } from "@/lib/media/transcode";
 import { prisma } from "@/lib/prisma";
 import { isMediaTranscodeEnabled } from "@/lib/queues/mediaTranscode.queue";
-import { exists } from "@/lib/storage/s3";
+import { exists, getStream } from "@/lib/storage/s3";
 import { storageConfig } from "@/lib/storage/config";
+import { buffer as streamToBuffer } from "node:stream/consumers";
 
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 type RouteContext = {
-  params: { mediaId: string };
+  params: Promise<{ mediaId: string }>;
 };
 
 const privateBucket = storageConfig.privateBucket;
 
+const sanitizeErrorMessage = (value: string) => {
+  const trimmed = value.trim();
+  if (trimmed.length <= 500) {
+    return trimmed;
+  }
+  return `${trimmed.slice(0, 497)}...`;
+};
+
+const createTempFilePath = (extension: string) => {
+  const safeExtension = extension.startsWith(".") ? extension : `.${extension}`;
+  return join(tmpdir(), `media-finalize-${randomUUID()}${safeExtension}`);
+};
+
+const markFailed = async (mediaId: string, message: string) => {
+  await prisma.mediaAsset.update({
+    where: { id: mediaId },
+    data: {
+      status: MediaStatus.failed,
+      errorMessage: sanitizeErrorMessage(message),
+    },
+  }).catch(() => undefined);
+};
+
 export async function POST(_request: NextRequest, context: RouteContext) {
-  const mediaId = context.params.mediaId;
+  const { mediaId } = await context.params;
   if (!mediaId) {
     return NextResponse.json(
       { ok: false, errorCode: "INVALID_ID" },
@@ -52,6 +83,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         type: true,
         status: true,
         sourceKey: true,
+        sizeBytes: true,
       },
     });
 
@@ -113,16 +145,32 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    // ✅ مسیر ویژه برای فایل‌های صوتی (voice)
-    if (media.type === MediaType.audio) {
-      await prisma.mediaAsset.update({
-        where: { id: media.id },
-        data: {
-          status: MediaStatus.ready,
-        },
-      });
+    if (media.type === MediaType.image) {
+      try {
+        await finalizeStoredImageMediaAsset({
+          id: media.id,
+          sourceKey: media.sourceKey,
+          sizeBytes: media.sizeBytes,
+        });
+      } catch (error) {
+        const message =
+          error instanceof ImageAssetProcessingError
+            ? error.message
+            : error instanceof Error
+              ? error.message
+              : "Image processing failed";
+        await markFailed(media.id, message);
+        return NextResponse.json(
+          {
+            ok: false,
+            errorCode: "PROCESSING_FAILED",
+            messageFa: "پردازش تصویر ناموفق بود.",
+          },
+          { status: 422, headers: NO_STORE_HEADERS },
+        );
+      }
 
-      logInfo("media.upload.finalize.audio_ready", {
+      logInfo("media.upload.finalize.image_ready", {
         mediaId,
         userId,
         bucket: privateBucket,
@@ -135,8 +183,7 @@ export async function POST(_request: NextRequest, context: RouteContext) {
       );
     }
 
-    // برای هر چیزی غیر از ویدیو (مثلاً image)، فعلاً این route پشتیبانی نمی‌کند
-    if (media.type !== MediaType.video) {
+    if (media.type !== MediaType.video && media.type !== MediaType.audio) {
       return NextResponse.json(
         { ok: false, errorCode: "INVALID_MEDIA_TYPE" },
         { status: 400, headers: NO_STORE_HEADERS },
@@ -148,14 +195,37 @@ export async function POST(_request: NextRequest, context: RouteContext) {
         {
           ok: false,
           errorCode: "DEMO_DISABLED",
-          messageFa: "پردازش ویدیو در نسخه دمو غیرفعال است.",
+          messageFa: "پردازش این رسانه در نسخه دمو غیرفعال است.",
         },
         { status: 503, headers: NO_STORE_HEADERS },
       );
     }
 
-    // ✅ مسیر قبلی برای ویدیوها
+    let tempPath: string | null = null;
     try {
+      const extension = media.sourceKey.includes(".")
+        ? `.${media.sourceKey.split(".").pop() ?? "bin"}`
+        : ".bin";
+      tempPath = createTempFilePath(extension);
+      const stream = await getStream(privateBucket, media.sourceKey);
+      const sourceBuffer = Buffer.from(await streamToBuffer(stream));
+      await writeFile(tempPath, sourceBuffer);
+      const probed = await probeAvFile(tempPath);
+      if (media.type === MediaType.video && probed.type !== "video") {
+        await markFailed(media.id, "Uploaded file is not a valid video");
+        return NextResponse.json(
+          { ok: false, errorCode: "INVALID_MIME", messageFa: "نوع واقعی فایل ویدیویی نیست." },
+          { status: 415, headers: NO_STORE_HEADERS },
+        );
+      }
+      if (media.type === MediaType.audio && probed.type !== "audio") {
+        await markFailed(media.id, "Uploaded file is not a valid audio file");
+        return NextResponse.json(
+          { ok: false, errorCode: "INVALID_MIME", messageFa: "نوع واقعی فایل صوتی نیست." },
+          { status: 415, headers: NO_STORE_HEADERS },
+        );
+      }
+
       await queueMediaTranscode(media.id);
     } catch (error) {
       if (error instanceof MediaTranscodeDisabledError) {
@@ -163,12 +233,25 @@ export async function POST(_request: NextRequest, context: RouteContext) {
           {
             ok: false,
             errorCode: "DEMO_DISABLED",
-            messageFa: "پردازش ویدیو در نسخه دمو غیرفعال است.",
+            messageFa: "پردازش این رسانه در نسخه دمو غیرفعال است.",
           },
           { status: 503, headers: NO_STORE_HEADERS },
         );
       }
-      throw error;
+      const message = error instanceof Error ? error.message : "unknown";
+      await markFailed(media.id, message);
+      return NextResponse.json(
+        {
+          ok: false,
+          errorCode: "PROCESSING_FAILED",
+          messageFa: "فایل رسانه معتبر نیست یا پردازش آن ممکن نشد.",
+        },
+        { status: 422, headers: NO_STORE_HEADERS },
+      );
+    } finally {
+      if (tempPath) {
+        await rm(tempPath, { force: true }).catch(() => undefined);
+      }
     }
 
     logInfo("media.upload.finalize.success", {

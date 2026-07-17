@@ -1,10 +1,30 @@
 import { notFound } from "next/navigation";
-import { ProductType } from "@prisma/client";
+import { ProductType, type PlanCycle } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 
 import { updatePrice } from "../../actions";
 import { PriceForm } from "../../price-form";
+
+const getPlanCycleLabel = (cycle: PlanCycle) => {
+  switch (cycle) {
+    case "MONTHLY":
+      return "ماهانه";
+    case "QUARTERLY":
+      return "سه ماهه";
+    case "YEARLY":
+      return "سالانه";
+  }
+};
+
+const getProductTypeLabel = (type: ProductType) => {
+  switch (type) {
+    case "JOB_POST":
+      return "ثبت آگهی";
+    case "SUBSCRIPTION":
+      return "اشتراک";
+  }
+};
 
 export default async function EditPricePage({
   params,
@@ -33,20 +53,22 @@ export default async function EditPricePage({
     orderBy: { createdAt: "asc" },
   });
 
-  const jobProducts = await prisma.product.findMany({
-    where: { type: ProductType.JOB_POST },
+  const products = await prisma.product.findMany({
+    where: { type: { not: ProductType.SUBSCRIPTION } },
     orderBy: { createdAt: "asc" },
   });
 
   const planOptions = plans.map((plan) => ({
     id: plan.id,
     name: plan.name,
+    cycleLabel: getPlanCycleLabel(plan.cycle),
     productName: plan.product?.name,
   }));
 
-  const productOptions = jobProducts.map((product) => ({
+  const productOptions = products.map((product) => ({
     id: product.id,
     name: product.name,
+    typeLabel: getProductTypeLabel(product.type),
   }));
 
   return (
@@ -54,7 +76,7 @@ export default async function EditPricePage({
       <div>
         <h2 className="text-xl font-semibold">ویرایش قیمت</h2>
         <p className="text-sm text-muted-foreground">
-          مبلغ و مقصد این قیمت را بروزرسانی کنید.
+          برای اشتراک، قیمت باید روی پلن بماند. برای سایر محصولات، قیمت روی خود محصول نگهداری می‌شود.
         </p>
       </div>
       <PriceForm

@@ -20,7 +20,7 @@ type PlanCycleValue = "MONTHLY" | "QUARTERLY" | "YEARLY";
 
 const cycleOptions: Array<{ value: PlanCycleValue; label: string }> = [
   { value: "MONTHLY", label: "ماهانه" },
-  { value: "QUARTERLY", label: "فصلی" },
+  { value: "QUARTERLY", label: "سه ماهه" },
   { value: "YEARLY", label: "سالانه" },
 ];
 

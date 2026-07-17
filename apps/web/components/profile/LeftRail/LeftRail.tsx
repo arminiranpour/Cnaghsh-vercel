@@ -2,14 +2,7 @@
 
 import Image from "next/image";
 import type { ProfileTabId } from "@/components/profile/ProfilePageClient";
-
-const NAV_ITEMS: { id: ProfileTabId; label: string; iconSrc: string }[] = [
-  { id: "personal", label: "اطلاعات شخصی", iconSrc: "/cineflash/profile/personal.png" },
-  { id: "gallery", label: "گالری تصاویر", iconSrc: "/cineflash/profile/gallery.png" },
-  { id: "videos", label: "ویدئوها", iconSrc: "/cineflash/profile/videos.png" },
-  { id: "audio", label: "فایل‌های صوتی", iconSrc: "/cineflash/profile/audio.png" },
-  { id: "awards", label: "افتخارات", iconSrc: "/cineflash/profile/awards.png" },
-];
+import { PROFILE_TAB_ITEMS } from "@/components/profile/profile-tabs";
 
 const grayFilter =
   "brightness(0) saturate(100%) invert(39%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(95%) contrast(90%)";
@@ -44,7 +37,7 @@ export function LeftRail({ activeTab, onTabChange }: LeftRailProps) {
             gap: 30,
           }}
         >
-          {NAV_ITEMS.map((item) => {
+          {PROFILE_TAB_ITEMS.map((item) => {
             const isActive = item.id === activeTab;
 
             return (
@@ -123,7 +116,7 @@ export function LeftRail({ activeTab, onTabChange }: LeftRailProps) {
         </svg>
 
         <div className="flex w-full px-4 py-[9px]">
-          {NAV_ITEMS.map((item) => {
+          {PROFILE_TAB_ITEMS.map((item) => {
             const isActive = item.id === activeTab;
 
             return (

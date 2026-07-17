@@ -87,15 +87,6 @@ export function GallerySlide({ images }: GallerySlideProps) {
           );
         })}
       </div>
-
-      {/* Next Page Button */}
-      <div
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-[38px] text-[15px] font-bold text-[#FF7F19] cursor-pointer md:absolute md:left-[328px] md:top-[748px] md:mt-0 md:h-[44px] md:w-[141px]"
-      >
-        <span>صفحه بعد</span>
-        <span style={{ fontSize: 20, marginBottom: 2 }}>←</span>
-      </div>
-
       {/* Lightbox overlay */}
       {activeIndex !== null && normalizedImages[activeIndex] && (
         <div

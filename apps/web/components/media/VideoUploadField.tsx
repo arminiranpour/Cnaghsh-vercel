@@ -4,10 +4,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ChangeEvent } from "react";
 
 import { Button } from "@/components/ui/button";
+import { VIDEO_ACCEPT } from "@/lib/media/formats";
 import { cn } from "@/lib/utils";
 import type { UploadResponse } from "@/lib/media/types";
 
-const ACCEPTED_TYPES = "video/mp4,video/webm,video/quicktime";
+const ACCEPTED_TYPES = VIDEO_ACCEPT;
 const POLL_INTERVAL_MS = 3000;
 
 type UploadPhase = "idle" | "uploading" | "processing" | "ready" | "failed";

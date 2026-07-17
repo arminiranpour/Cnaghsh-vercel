@@ -7,6 +7,8 @@ import { useRouter } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/components/ui/use-toast";
+import { IMAGE_ACCEPT } from "@/lib/media/formats";
+import { responsiveImageLoader } from "@/lib/media/responsive-images";
 
 import { deleteImage, uploadImage } from "@/lib/profile/profile-actions";
 
@@ -94,7 +96,7 @@ export function MediaGallery({ images }: MediaGalleryProps) {
             id="gallery-file"
             name="file"
             type="file"
-            accept="image/png,image/jpeg,image/webp"
+            accept={IMAGE_ACCEPT}
             disabled={isPending}
             dir="ltr"
             className="block w-full text-sm"
@@ -122,10 +124,12 @@ export function MediaGallery({ images }: MediaGalleryProps) {
               <div className="overflow-hidden rounded-md border border-border/50">
                 <Image
                   src={image.url}
+                  loader={responsiveImageLoader}
                   alt="تصویر گالری"
                   width={400}
                   height={280}
                   className="h-48 w-full object-cover"
+                  sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                 />
               </div>
               <p className="truncate text-xs text-muted-foreground" dir="ltr">

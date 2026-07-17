@@ -68,7 +68,7 @@ const EXPERIENCE_CARD_META: Record<
     top: 345,
     backgroundColor: "rgba(10, 63, 53, 0.1)",
     titleColor: "#0A3F35",
-    iconSrc: "/cineflash/profile/jobs/short-film.png",
+    iconSrc: "/cineflash/profile/whatIveDone/shortfilm.svg",
     iconAlt: "فیلم کوتاه",
     iconWidth: 28,
     iconHeight: 28,
@@ -78,7 +78,7 @@ const EXPERIENCE_CARD_META: Record<
     top: 345,
     backgroundColor: "rgba(255, 127, 25, 0.1)",
     titleColor: ORANGE,
-    iconSrc: "/cineflash/profile/jobs/theatre.png",
+    iconSrc: "/cineflash/profile/whatIveDone/theatre.svg",
     iconAlt: "تئاتر",
     iconWidth: 38,
     iconHeight: 38,
@@ -88,7 +88,7 @@ const EXPERIENCE_CARD_META: Record<
     top: 345 + CARD_HEIGHT + 30,
     backgroundColor: "rgba(255, 127, 25, 0.1)",
     titleColor: ORANGE,
-    iconSrc: "/cineflash/profile/jobs/tv.png",
+    iconSrc: "/cineflash/profile/whatIveDone/tv.svg",
     iconAlt: "تلویزیون",
     iconWidth: 28,
     iconHeight: 28,
@@ -98,7 +98,7 @@ const EXPERIENCE_CARD_META: Record<
     top: 345 + CARD_HEIGHT + 30,
     backgroundColor: "rgba(10, 63, 53, 0.1)",
     titleColor: "#0A3F35",
-    iconSrc: "/cineflash/profile/jobs/cinema.png",
+    iconSrc: "/cineflash/profile/whatIveDone/cinema.svg",
     iconAlt: "سینمایی",
     iconWidth: 28,
     iconHeight: 28,
@@ -107,8 +107,8 @@ const EXPERIENCE_CARD_META: Record<
 
 type PersonalInfoSlideProps = {
   bio?: string | null;
-  // allow both object AND JSON string from DB
-  experience?: ExperienceData | Prisma.JsonValue | string | null;
+  // Prisma JSON fields may arrive as a parsed object or JSON string.
+  experience?: Prisma.JsonValue | null;
 };
 
 const DEFAULT_BIO =
@@ -121,18 +121,15 @@ export function PersonalInfoSlide({ bio, experience }: PersonalInfoSlideProps) {
 
   if (experience) {
     if (typeof experience === "string") {
-      // experience is JSON string from DB
       try {
         const parsed = JSON.parse(experience);
-        if (parsed && typeof parsed === "object") {
+        if (parsed && typeof parsed === "object" && !Array.isArray(parsed)) {
           experienceData = parsed as ExperienceData;
         }
       } catch {
-        // invalid JSON → just keep it empty
         experienceData = {};
       }
-    } else {
-      // experience is already an object
+    } else if (typeof experience === "object" && !Array.isArray(experience)) {
       experienceData = experience as ExperienceData;
     }
   }
@@ -229,18 +226,6 @@ export function PersonalInfoSlide({ bio, experience }: PersonalInfoSlideProps) {
           );
         })}
       </div>
-
-      {/* دکمه صفحه بعد – بدون بُردر، وسط، فلش سمت راست */}
-      <div
-        className="mt-6 flex w-full items-center justify-center gap-2 rounded-[38px] text-[15px] font-bold text-[#FF7F19] cursor-pointer md:absolute md:left-[328px] md:top-[748px] md:mt-0 md:h-[44px] md:w-[141px]"
-      >
-        {/* متن سمت چپ */}
-        <span>صفحه بعد</span>
-
-        {/* فلش سمت راست ← */}
-        <span style={{ fontSize: 20, marginBottom: 2 }}>←</span>
-      </div>
-
     </div>
   );
 }

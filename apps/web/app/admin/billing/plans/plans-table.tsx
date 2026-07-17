@@ -30,7 +30,7 @@ type PlanRow = {
 
 const cycleLabels: Record<PlanRow["cycle"], string> = {
   MONTHLY: "ماهانه",
-  QUARTERLY: "فصلی",
+  QUARTERLY: "سه ماهه",
   YEARLY: "سالانه",
 };
 

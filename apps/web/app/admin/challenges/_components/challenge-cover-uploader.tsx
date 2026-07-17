@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { IMAGE_ACCEPT } from "@/lib/media/formats";
 
 type ChallengeCoverUploaderProps = {
   challengeId: string;
@@ -15,7 +16,7 @@ type ChallengeCoverUploaderProps = {
   coverMediaAssetId: string | null;
 };
 
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp";
+const ACCEPTED_TYPES = IMAGE_ACCEPT;
 
 const resolveErrorMessage = (error: string | undefined, fallback: string) => {
   if (!error) {
@@ -28,7 +29,7 @@ const resolveErrorMessage = (error: string | undefined, fallback: string) => {
     case "FILE_TOO_LARGE":
       return "حجم تصویر بیش از حد مجاز است.";
     case "UNSUPPORTED_MEDIA_TYPE":
-      return "فقط فرمت‌های JPG، PNG و WEBP مجاز هستند.";
+      return "فقط فرمت‌های JPG، PNG، WEBP و HEIC مجاز هستند.";
     case "UNAUTHORIZED":
       return "اجازه دسترسی ندارید.";
     case "CHALLENGE_NOT_FOUND":

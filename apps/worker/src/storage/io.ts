@@ -3,9 +3,15 @@ import { pipeline } from "node:stream/promises";
 import { Readable } from "node:stream";
 import type { ReadableStream as WebReadableStream } from "node:stream/web";
 
-import { GetObjectCommand, PutObjectCommand } from "@aws-sdk/client-s3";
+import * as S3 from "@aws-sdk/client-s3";
 
 import { s3 } from "./client";
+
+const DeleteObjectCommandCtor = (
+  S3 as unknown as {
+    DeleteObjectCommand: new (input: { Bucket: string; Key: string }) => unknown;
+  }
+).DeleteObjectCommand;
 
 type UploadOptions = {
   bucket: string;
@@ -51,7 +57,7 @@ const toReadable = (body: unknown) => {
 
 const downloadToFile = async (bucket: string, key: string, localPath: string) => {
   const response = (await s3.send(
-    new GetObjectCommand({
+    new S3.GetObjectCommand({
       Bucket: bucket,
       Key: key,
     }),
@@ -64,7 +70,7 @@ const downloadToFile = async (bucket: string, key: string, localPath: string) =>
 const uploadFile = async ({ bucket, key, contentType, cacheControl }: UploadOptions, localPath: string) => {
   const body = createReadStream(localPath);
   await s3.send(
-    new PutObjectCommand({
+    new S3.PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: body,
@@ -76,7 +82,7 @@ const uploadFile = async ({ bucket, key, contentType, cacheControl }: UploadOpti
 
 const uploadBuffer = async ({ bucket, key, contentType, cacheControl }: UploadOptions, buffer: Buffer) => {
   await s3.send(
-    new PutObjectCommand({
+    new S3.PutObjectCommand({
       Bucket: bucket,
       Key: key,
       Body: buffer,
@@ -86,4 +92,13 @@ const uploadBuffer = async ({ bucket, key, contentType, cacheControl }: UploadOp
   );
 };
 
-export { downloadToFile, uploadBuffer, uploadFile };
+const deleteObject = async (bucket: string, key: string) => {
+  await s3.send(
+    new DeleteObjectCommandCtor({
+      Bucket: bucket,
+      Key: key,
+    }) as never,
+  );
+};
+
+export { deleteObject, downloadToFile, uploadBuffer, uploadFile };

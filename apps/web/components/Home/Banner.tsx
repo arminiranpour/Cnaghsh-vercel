@@ -20,14 +20,14 @@ export default function HeroSection() {
 
           {/* 📏 فریم سفید */}
           <Image
-            src="/cineflash/home/banner/MainFrame.png"
+            src="/cineflash/home/banner/Main Frame.svg"
             alt="نوار سفید بنر"
             fill
             className="absolute"
             style={{
               left: "0%",
               top: "1.31%",
-              transform: "scaleX(1.15) scaleY(1.05)", // ← افقی ۱۵٪ و عمودی ۵٪ کشیده‌تر
+              transform: "scaleX(1.3) scaleY(1.55)", // ← افقی ۱۵٪ و عمودی ۵٪ کشیده‌تر
               transformOrigin: "center top", // ← از بالا ثابت بماند و پایین کشیده شود
               opacity: 0.5,
               zIndex: 10,
@@ -40,7 +40,7 @@ export default function HeroSection() {
 
           {/* 🟠 لوگو */}
           <Image
-            src="/cineflash/home/banner/LogoText.png"
+            src="/cineflash/home/banner/CNaghsh LogoType Orange 4 FA 1.svg"
             alt="لوگوی سی‌نقش"
             width={787}
             height={786}
@@ -59,7 +59,7 @@ export default function HeroSection() {
 
           {/* 🔸 متن نارنجی */}
           <Image
-            src="/cineflash/home/banner/SubText.png"
+            src="/cineflash/home/banner/CNaghsh Advertising slogan orange 1.svg"
             alt="سینما آرتیستینگ تئاتر"
             width={556}
             height={34}
@@ -82,10 +82,10 @@ export default function HeroSection() {
             aria-label="درباره سی‌نقش"
             className="absolute"
             style={{
-              left: "12.78%",
+              left: "10.78%",
               top: "84.02%",
               width: "10.81%",
-              height: "3.14%",
+              height: "4.14%",
               border: "none",
               padding: 0,
               background: "transparent",
@@ -93,26 +93,24 @@ export default function HeroSection() {
               zIndex: 20,
             }}
           >
-            <span className="sr-only">درباره سی‌نقش</span>
-            <span className="relative block" style={{ width: "100%", height: "100%" }}>
-              <Image
-                src="/cineflash/home/banner/AboutButton.png"
-                alt=""
-                fill
-                unoptimized
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 650px, 60vw"
-                style={{ objectFit: "cover" }}
-                priority
-              />
-            </span>
+          <span className="sr-only">درباره سی‌نقش</span>
+          <span
+            className="flex h-full w-full items-center justify-center rounded-full bg-[#FFFFFF]/80 text-black select-none"
+            style={{
+              fontFamily: "IRANSans",
+              fontWeight: 500,
+              fontSize: "16px",
+              lineHeight: "36px",
+              letterSpacing: 0,
+              whiteSpace: "nowrap",
+            }}
+          >
+            درباره سی‌نقش
+          </span>
           </button>
 
           {/* 📝 کپشن خاکستری */}
-          <Image
-            src="/cineflash/home/banner/SubCaption.png"
-            alt="بزرگ‌ترین جامعه‌ی جهانی بازیگران فیلم، تئاتر، شبکه‌های خانگی، تلویزیون"
-            width={634}
-            height={34}
+          <div
             className="absolute"
             style={{
               left: "43.38%",
@@ -120,11 +118,18 @@ export default function HeroSection() {
               width: "41.55%",
               height: "2.97%",
               zIndex: 20,
+              fontFamily: "IRANSans",
+              fontStyle: "normal",
+              fontWeight: 400,
+              fontSize: "22px",
+              lineHeight: "34px",
+              textAlign: "right",
+              color: "#FFFFFF",
+              whiteSpace: "nowrap",
             }}
-            unoptimized
-            priority
-            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 650px, 60vw"
-          />
+          >
+            بزرگ‌ترین جامعه‌ی جهانی بازیگران فیلم، تئاتر، شبکه‌های خانگی، تلویزیون
+          </div>
 
           {/* ⬅️ فلش تصویری */}
           <button
@@ -132,7 +137,7 @@ export default function HeroSection() {
             aria-label="فلش بنر"
             className="absolute"
             style={{
-              left: "17.96%",
+              left: "12.96%",
               top: "92.84%",
               width: "2.23%",
               height: "2.36%",
@@ -145,15 +150,23 @@ export default function HeroSection() {
           >
             <span className="sr-only">فلش بنر</span>
             <span className="relative block" style={{ width: "100%", height: "100%" }}>
-              <Image
-                src="/cineflash/home/banner/Arrow.png"
-                alt=""
-                fill
-                unoptimized
-                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 650px, 60vw"
-                style={{ objectFit: "contain" }}
-                priority
-              />
+              <svg
+                width="100%"
+                height="100%"
+                viewBox="0 0 34 27"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+                style={{ display: "block" }}
+              >
+                <path
+                  d="M33 13.5H2M2 13.5L14 1.5M2 13.5L14 25.5"
+                  stroke="white"
+                  strokeWidth="3"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
             </span>
           </button>
         </div>

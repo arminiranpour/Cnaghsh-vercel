@@ -3,9 +3,16 @@ import { existsSync } from "node:fs";
 import { promises as fs } from "node:fs";
 import path from "node:path";
 
+import { uploadConfig } from "@/lib/media/config";
+import { detectImageMimeFromBuffer, processImageBuffer } from "@/lib/media/image-processing";
+import { getProfileImageVariantKey } from "@/lib/storage/keys";
+
 const ALLOWED_MIME_TYPES = new Set([
-  "image/png",
+  "image/heic",
+  "image/heif",
   "image/jpeg",
+  "image/jpg",
+  "image/png",
   "image/webp",
 ]);
 
@@ -22,35 +29,6 @@ export class MediaStorageError extends Error {
 
 export function isMediaStorageError(error: unknown): error is MediaStorageError {
   return error instanceof MediaStorageError;
-}
-
-function getExtension(mimeType: string): string {
-  switch (mimeType) {
-    case "image/png":
-      return "png";
-    case "image/jpeg":
-      return "jpg";
-    case "image/webp":
-      return "webp";
-    default:
-      throw new MediaStorageError("نوع فایل پشتیبانی نمی شود.");
-  }
-}
-
-function joinKey(...parts: string[]) {
-  return parts
-    .map((part) => part.replace(/^\/+|\/+$/g, ""))
-    .filter((part) => part.length > 0)
-    .join("/");
-}
-
-function buildProfileImageKey(userId: string, extension: string) {
-  return joinKey(
-    "uploads",
-    "profile-images",
-    userId,
-    `${Date.now()}-${crypto.randomUUID()}.${extension}`,
-  );
 }
 
 function parsePublicObjectKey(url: string, publicBaseUrl: string): string | null {
@@ -77,6 +55,35 @@ function parsePublicObjectKey(url: string, publicBaseUrl: string): string | null
     .join("/");
 }
 
+const isEquivalentImageMime = (declared: string, detected: string) => {
+  const normalize = (value: string) => value.trim().toLowerCase();
+  const left = normalize(declared);
+  const right = normalize(detected);
+
+  if (left === right) {
+    return true;
+  }
+  if ((left === "image/jpeg" || left === "image/jpg") && right === "image/jpeg") {
+    return true;
+  }
+  if ((left === "image/heic" || left === "image/heif") && (right === "image/heic" || right === "image/heif")) {
+    return true;
+  }
+  return false;
+};
+
+const parseResponsiveProfileImageKey = (key: string) => {
+  const match = key.match(/^uploads\/profile-images\/([^/]+)\/([^/]+)\/(\d+)\.webp$/i);
+  if (!match) {
+    return null;
+  }
+  return {
+    ownerUserId: match[1] ?? "",
+    imageId: match[2] ?? "",
+    width: Number.parseInt(match[3] ?? "", 10),
+  };
+};
+
 const PUBLIC_DIR = (() => {
   const cwd = process.cwd();
   const direct = path.join(cwd, "public");
@@ -97,13 +104,25 @@ export async function saveImageFromFormData(
   }
 
   if (!ALLOWED_MIME_TYPES.has(file.type)) {
-    throw new MediaStorageError("لطفاً تصویری با فرمت مجاز (PNG، JPEG یا WEBP) بارگذاری کنید.");
+    throw new MediaStorageError("لطفاً تصویری با فرمت مجاز (PNG، JPEG، WEBP یا HEIC) بارگذاری کنید.");
   }
 
   const arrayBuffer = await file.arrayBuffer();
   const buffer = Buffer.from(arrayBuffer);
-  const extension = getExtension(file.type);
-  const key = buildProfileImageKey(userId, extension);
+  const detectedMime = await detectImageMimeFromBuffer(buffer).catch(() => null);
+  if (!detectedMime) {
+    throw new MediaStorageError("فایل تصویر معتبر نیست.");
+  }
+  if (file.type && !isEquivalentImageMime(file.type, detectedMime)) {
+    throw new MediaStorageError("نوع واقعی فایل تصویر با نوع اعلام‌شده مطابقت ندارد.");
+  }
+
+  const imageId = `${Date.now()}-${crypto.randomUUID()}`;
+  const processed = await processImageBuffer(
+    buffer,
+    uploadConfig.imageWebpQuality,
+    uploadConfig.responsiveImageWidths,
+  );
 
   let putBuffer: typeof import("@/lib/storage/s3").putBuffer;
   let resolveBucketForVisibility: typeof import("@/lib/storage/visibility").resolveBucketForVisibility;
@@ -122,8 +141,16 @@ export async function saveImageFromFormData(
 
   try {
     const bucket = resolveBucketForVisibility("public");
-    await putBuffer(bucket, key, buffer, file.type);
-    return { url: getPublicMediaUrlFromKey(key) };
+    for (const variant of processed.variants) {
+      const key = getProfileImageVariantKey(userId, imageId, variant.width);
+      await putBuffer(bucket, key, variant.buffer, "image/webp");
+    }
+    const largestVariant = processed.variants[processed.variants.length - 1];
+    if (!largestVariant) {
+      throw new MediaStorageError("تبدیل تصویر ناموفق بود.");
+    }
+    const largestKey = getProfileImageVariantKey(userId, imageId, largestVariant.width);
+    return { url: getPublicMediaUrlFromKey(largestKey) };
   } catch {
     throw new MediaStorageError(IMAGE_UPLOAD_ERROR);
   }
@@ -168,13 +195,33 @@ export async function deleteByUrl(url: string, userId: string): Promise<void> {
     throw new MediaStorageError("آدرس فایل نامعتبر است.");
   }
 
-  const segments = key.split("/");
-  if (segments.length < 4 || segments[0] !== "uploads" || segments[2] !== userId) {
-    throw new MediaStorageError("دسترسی به حذف این فایل مجاز نیست.");
+  const responsiveKey = parseResponsiveProfileImageKey(key);
+  if (responsiveKey) {
+    if (responsiveKey.ownerUserId !== userId) {
+      throw new MediaStorageError("دسترسی به حذف این فایل مجاز نیست.");
+    }
+  } else {
+    const segments = key.split("/");
+    if (segments.length < 4 || segments[0] !== "uploads" || segments[2] !== userId) {
+      throw new MediaStorageError("دسترسی به حذف این فایل مجاز نیست.");
+    }
   }
 
   try {
     const bucket = resolveBucketForVisibility("public");
+    if (responsiveKey) {
+      const widths = Array.from(new Set([
+        ...uploadConfig.responsiveImageWidths,
+        responsiveKey.width,
+      ]));
+      await Promise.all(
+        widths.map((width) =>
+          remove(bucket, getProfileImageVariantKey(userId, responsiveKey.imageId, width)).catch(() => undefined),
+        ),
+      );
+      return;
+    }
+
     await remove(bucket, key);
   } catch {
     throw new MediaStorageError(IMAGE_DELETE_ERROR);

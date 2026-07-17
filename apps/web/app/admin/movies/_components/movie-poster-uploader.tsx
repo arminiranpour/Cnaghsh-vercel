@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { IMAGE_ACCEPT } from "@/lib/media/formats";
 
-const ACCEPTED_TYPES = "image/png,image/jpeg,image/webp";
+const ACCEPTED_TYPES = IMAGE_ACCEPT;
 
 type UploadResponse =
   | { ok: true; mediaId: string }

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { MapPin, CalendarDays } from "lucide-react";
 
 import { formatJalaliDateRangeNoYear } from "@/lib/datetime/jalali";
+import { buildResponsiveImageSrcSet } from "@/lib/media/responsive-images";
 
 type ChallengeCardProps = {
   id: string;
@@ -33,6 +34,8 @@ export function ChallengeCard({
           {imageUrl ? (
             <img
               src={imageUrl}
+              srcSet={buildResponsiveImageSrcSet(imageUrl)}
+              sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 33vw"
               alt={title}
               className="h-full w-full object-cover"
               loading="lazy"

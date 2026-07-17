@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { AUDIO_ACCEPT } from "@/lib/media/formats";
 import type { UploadErrorResponse, UploadInitResponse } from "@/lib/media/types";
 
 import { updateVoices } from "@/lib/profile/profile-actions";
@@ -150,14 +151,13 @@ export function VoicesForm({ initialVoices }: VoicesFormProps) {
       setFormError(null);
 
       try {
+        const formData = new FormData();
+        formData.set("file", file);
+        formData.set("contentType", file.type || "audio/mpeg");
+
         const initResponse = await fetch("/api/media/upload", {
           method: "POST",
-          headers: { "content-type": "application/json" },
-          body: JSON.stringify({
-            fileName: file.name || "voice",
-            contentType: file.type || "audio/mpeg",
-            sizeBytes: file.size,
-          }),
+          body: formData,
         });
 
         const initPayload = (await initResponse.json()) as
@@ -172,40 +172,12 @@ export function VoicesForm({ initialVoices }: VoicesFormProps) {
         }
 
         const mediaId = initPayload.mediaId;
-        const signedUrl = initPayload.signedUrl;
         const checkStatusUrl =
           initPayload.next?.checkStatusUrl ??
           `/api/media/${mediaId}/status`;
-        const finalizeUrl =
-          initPayload.next?.finalizeUrl ??
-          `/api/media/${mediaId}/finalize`;
 
-        if (!mediaId || !signedUrl) {
+        if (!mediaId) {
           throw new Error("اطلاعات آپلود ناقص است.");
-        }
-
-        // upload
-        const putResponse = await fetch(signedUrl, {
-          method: "PUT",
-          headers: {
-            "content-type": file.type || "application/octet-stream",
-          },
-          body: file,
-        });
-
-        if (!putResponse.ok) {
-          throw new Error("بارگذاری فایل صوتی ناموفق بود.");
-        }
-
-        // finalize
-        const finalizeResponse = await fetch(finalizeUrl, {
-          method: "POST",
-          cache: "no-store",
-        });
-
-        if (!finalizeResponse.ok) {
-          const payload = (await finalizeResponse.json().catch(() => null)) as { messageFa?: string } | null;
-          throw new Error(payload?.messageFa ?? "تأیید نهایی آپلود ناموفق بود.");
         }
 
         const { duration } = await pollUntilReady(checkStatusUrl);
@@ -340,7 +312,7 @@ export function VoicesForm({ initialVoices }: VoicesFormProps) {
             key={uploadInputKey}
             id="voice-file"
             type="file"
-            accept="audio/*"
+            accept={AUDIO_ACCEPT}
             onChange={handleFileChange}
             disabled={isBusy}
             dir="ltr"

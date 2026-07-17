@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
+import { VIDEO_ACCEPT } from "@/lib/media/formats";
 
 type CourseIntroVideoUploaderProps = {
   courseId: string;
@@ -15,7 +16,7 @@ type CourseIntroVideoUploaderProps = {
   isHls: boolean;
 };
 
-const ACCEPTED_TYPES = "video/mp4,video/webm,video/quicktime";
+const ACCEPTED_TYPES = VIDEO_ACCEPT;
 
 const resolveErrorMessage = (error: string | undefined, fallback: string) => {
   if (!error) {
@@ -27,7 +28,9 @@ const resolveErrorMessage = (error: string | undefined, fallback: string) => {
     case "FILE_TOO_LARGE":
       return "Video file is too large.";
     case "UNSUPPORTED_MEDIA_TYPE":
-      return "Only MP4, WEBM, or MOV videos are allowed.";
+      return "Only MP4, MOV, WEBM, or MKV videos are allowed.";
+    case "TRANSCODE_DISABLED":
+      return "Video processing is not available right now.";
     case "UNAUTHORIZED":
       return "You are not allowed to upload this video.";
     case "COURSE_NOT_FOUND":
@@ -143,7 +146,7 @@ export function CourseIntroVideoUploader({
     <div className="space-y-4 rounded-md border border-border bg-background p-6">
       <div className="space-y-2">
         <h2 className="text-lg font-semibold">Course Intro Video</h2>
-        <p className="text-sm text-muted-foreground">Upload an MP4, WEBM, or MOV video.</p>
+        <p className="text-sm text-muted-foreground">Upload an MP4, MOV, WEBM, or MKV video.</p>
       </div>
       {videoUrl ? (
         <div className="space-y-2">

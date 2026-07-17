@@ -30,8 +30,8 @@ type PriceFormInitialValues = Partial<Omit<PriceFormState, "amount">> & {
 };
 
 type PriceFormProps = {
-  plans: Array<{ id: string; name: string; productName?: string }>;
-  products: Array<{ id: string; name: string }>;
+  plans: Array<{ id: string; name: string; cycleLabel?: string; productName?: string }>;
+  products: Array<{ id: string; name: string; typeLabel?: string }>;
   initialValues?: PriceFormInitialValues;
   action: PriceAction | ((values: Parameters<PriceAction>[0]) => ReturnType<PriceAction>);
   submitLabel: string;
@@ -44,7 +44,7 @@ type FormErrors = {
 
 const modeLabels: Record<LinkingMode, string> = {
   plan: "پلن اشتراک",
-  product: "محصول تک‌خرید",
+  product: "محصول غیر اشتراکی",
 };
 
 export function PriceForm({ plans, products, initialValues, action, submitLabel }: PriceFormProps) {
@@ -181,14 +181,14 @@ export function PriceForm({ plans, products, initialValues, action, submitLabel 
               <p className="text-xs text-destructive">{errors.destination}</p>
             ) : (
               <p className="text-xs text-muted-foreground">
-                دقیقاً یکی از پلن یا محصول باید انتخاب شود.
+                برای اشتراک، قیمت به پلن وصل می‌شود. برای سایر محصولات، قیمت به خود محصول وصل می‌شود.
               </p>
             )}
           </div>
 
           {values.mode === "plan" ? (
             <div className="space-y-2">
-              <Label>شناسه پلن</Label>
+              <Label>پلن اشتراک</Label>
               <Select
                 value={values.planId ?? undefined}
                 onValueChange={(value) =>
@@ -203,7 +203,9 @@ export function PriceForm({ plans, products, initialValues, action, submitLabel 
                   {planOptions.map((plan) => (
                     <SelectItem key={plan.id} value={plan.id}>
                       <div className="space-y-1">
-                        <div className="font-medium">{plan.name}</div>
+                        <div className="font-medium">
+                          {[plan.name, plan.cycleLabel].filter(Boolean).join(" • ")}
+                        </div>
                         {plan.productName ? (
                           <div className="text-xs text-muted-foreground">
                             {plan.productName}
@@ -216,13 +218,13 @@ export function PriceForm({ plans, products, initialValues, action, submitLabel 
               </Select>
               {planOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  پلن فعالی برای انتخاب وجود ندارد.
+                  هیچ پلن اشتراک فعالی برای قیمت‌گذاری وجود ندارد.
                 </p>
               ) : null}
             </div>
           ) : (
             <div className="space-y-2">
-              <Label>شناسه محصول</Label>
+              <Label>محصول غیر اشتراکی</Label>
               <Select
                 value={values.productId ?? undefined}
                 onValueChange={(value) =>
@@ -236,14 +238,21 @@ export function PriceForm({ plans, products, initialValues, action, submitLabel 
                 <SelectContent>
                   {productOptions.map((product) => (
                     <SelectItem key={product.id} value={product.id}>
-                      {product.name}
+                      <div className="space-y-1">
+                        <div className="font-medium">{product.name}</div>
+                        {product.typeLabel ? (
+                          <div className="text-xs text-muted-foreground">
+                            {product.typeLabel}
+                          </div>
+                        ) : null}
+                      </div>
                     </SelectItem>
                   ))}
                 </SelectContent>
               </Select>
               {productOptions.length === 0 ? (
                 <p className="text-xs text-muted-foreground">
-                  محصول JOB_POST فعالی برای انتخاب وجود ندارد.
+                  هیچ محصول غیر اشتراکی فعالی برای قیمت‌گذاری وجود ندارد.
                 </p>
               ) : null}
             </div>

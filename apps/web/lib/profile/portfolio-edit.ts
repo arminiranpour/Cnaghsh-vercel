@@ -1,20 +1,17 @@
 import type { Prisma } from "@prisma/client";
 
+import type { AccentEntry } from "@/lib/profile/accents";
 import { normalizeLanguageSkills, type LanguageSkill } from "@/lib/profile/languages";
 import { getSkillIdentity, resolveSkillValue } from "@/lib/profile/skills";
-
-export type AccentEntry = {
-  title: string;
-  mediaId?: string;
-  url?: string;
-  duration?: number | null;
-};
+export type { AccentEntry } from "@/lib/profile/accents";
+export { normalizeAccentEntries } from "@/lib/profile/accents";
 
 export type VoiceEntry = {
   mediaId: string;
   url: string;
   title?: string | null;
   duration?: number | null;
+  fileName?: string | null;
 };
 
 export type PortfolioVideoEntry = {
@@ -129,77 +126,6 @@ export function normalizeLanguageEntries(
   raw: Prisma.JsonValue | null | undefined,
 ): LanguageSkill[] {
   return normalizeLanguageSkills(raw);
-}
-
-export function normalizeAccentEntries(
-  raw: Prisma.JsonValue | null | undefined,
-): AccentEntry[] {
-  if (!Array.isArray(raw)) {
-    return [];
-  }
-
-  const result: AccentEntry[] = [];
-  const seen = new Set<string>();
-
-  for (const item of raw) {
-    if (typeof item === "string") {
-      const cleaned = item.trim();
-      if (!cleaned) {
-        continue;
-      }
-      const key = cleaned.toLowerCase();
-      if (seen.has(key)) {
-        continue;
-      }
-      seen.add(key);
-      result.push({ title: cleaned });
-      continue;
-    }
-
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      continue;
-    }
-
-    const rawTitle =
-      typeof (item as { title?: unknown }).title === "string"
-        ? ((item as { title?: string }).title ?? "").trim()
-        : typeof (item as { label?: unknown }).label === "string"
-          ? ((item as { label?: string }).label ?? "").trim()
-          : "";
-
-    if (!rawTitle) {
-      continue;
-    }
-
-    const dedupeKey = rawTitle.toLowerCase();
-    if (seen.has(dedupeKey)) {
-      continue;
-    }
-
-    const mediaId =
-      typeof (item as { mediaId?: unknown }).mediaId === "string"
-        ? ((item as { mediaId?: string }).mediaId ?? "").trim()
-        : "";
-    const url =
-      typeof (item as { url?: unknown }).url === "string"
-        ? ((item as { url?: string }).url ?? "").trim()
-        : "";
-    const duration =
-      typeof (item as { duration?: unknown }).duration === "number" &&
-      Number.isFinite((item as { duration?: number }).duration)
-        ? (item as { duration?: number }).duration
-        : null;
-
-    seen.add(dedupeKey);
-    result.push({
-      title: rawTitle,
-      mediaId: mediaId || undefined,
-      url: url || undefined,
-      duration,
-    });
-  }
-
-  return result;
 }
 
 export function normalizeDegreeEntries(

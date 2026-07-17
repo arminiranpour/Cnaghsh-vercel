@@ -2,7 +2,6 @@
 "use client";
 
 import Image from "next/image";
-import addImage from "./add-image.png";
 import {
   useCallback,
   useEffect,
@@ -21,8 +20,10 @@ import { AudioWaveform } from "@/components/profile/CenterPane/AudioSlide";
 import { EDIT_PROFILE_MOBILE_BOTTOM_NAV_H } from "@/components/profile/editProfile/constants";
 import type { WaveformAudioPlayerHandle } from "@/components/ui/WaveformAudioPlayer";
 import { useToast } from "@/components/ui/use-toast";
+import { AUDIO_ACCEPT, IMAGE_ACCEPT, VIDEO_ACCEPT } from "@/lib/media/formats";
 import type { City } from "@/lib/location/cities";
-import { LANGUAGE_LEVEL_MAX, type LanguageSkill } from "@/lib/profile/languages";
+import { ACCENT_OPTIONS } from "@/lib/profile/accents";
+import { LANGUAGE_LEVEL_MAX, LANGUAGE_OPTIONS, type LanguageSkill } from "@/lib/profile/languages";
 import {
   SKILLS,
   getSkillIdentity,
@@ -54,6 +55,8 @@ import {
   upsertPersonalInfo,
 } from "@/lib/profile/profile-actions";
 
+const addImage = "/cineflash/profile/editProfile/addImage.svg";
+
 type ProvinceOption = {
   id: string;
   name: string;
@@ -63,6 +66,7 @@ type AudioAttachment = {
   mediaId: string;
   url: string;
   duration?: number | null;
+  fileName?: string | null;
 };
 
 type AudioRowEntry = {
@@ -91,6 +95,7 @@ type LanguageEntryState = {
 type AccentEntryState = {
   id: string;
   title: string;
+  level: number | null;
   audio?: AudioAttachment | null;
 };
 
@@ -178,6 +183,8 @@ const EDIT_TABS = [
   { id: "audio", label: "فایل‌های صوتی" },
   { id: "awards", label: "افتخارات" },
 ] as const satisfies ReadonlyArray<{ id: ProfileTabId; label: string }>;
+const LANGUAGE_LABEL_OPTIONS = LANGUAGE_OPTIONS.map((option) => option.label);
+const ACCENT_VALUE_OPTIONS = ACCENT_OPTIONS.map((option) => option.value);
 const EXPERIENCE_SECTION_CONFIG: Array<{
   key: ExperienceCategoryKey;
   label: string;
@@ -216,6 +223,14 @@ const toAbsolutePlaybackUrl = (value: string) => {
 
 const getAudioPlaybackUrl = (mediaId: string) => {
   return toAbsolutePlaybackUrl(`/api/media/${mediaId}/file`);
+};
+
+const getAudioAttachmentLabel = (audio?: AudioAttachment | null) => {
+  const fileName = audio?.fileName?.trim();
+  if (fileName) {
+    return fileName;
+  }
+  return "فایل صوتی بارگذاری شده";
 };
 
 const createId = () => {
@@ -485,14 +500,13 @@ const resolveGallerySlots = (entries: GalleryAsset[]) => {
 };
 
 async function uploadAudioFile(file: File): Promise<AudioAttachment> {
+  const formData = new FormData();
+  formData.set("file", file);
+  formData.set("contentType", file.type || "audio/mpeg");
+
   const initResponse = await fetch("/api/media/upload", {
     method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({
-      fileName: file.name || "audio",
-      contentType: file.type || "audio/mpeg",
-      sizeBytes: file.size,
-    }),
+    body: formData,
   });
 
   const initPayload = (await initResponse.json()) as UploadInitResponse | UploadErrorResponse;
@@ -504,32 +518,10 @@ async function uploadAudioFile(file: File): Promise<AudioAttachment> {
   }
 
   const mediaId = initPayload.mediaId;
-  const signedUrl = initPayload.signedUrl;
   const checkStatusUrl = initPayload.next?.checkStatusUrl ?? `/api/media/${mediaId}/status`;
-  const finalizeUrl = initPayload.next?.finalizeUrl ?? `/api/media/${mediaId}/finalize`;
 
-  if (!mediaId || !signedUrl) {
+  if (!mediaId) {
     throw new Error("اطلاعات آپلود ناقص است.");
-  }
-
-  const putResponse = await fetch(signedUrl, {
-    method: "PUT",
-    headers: { "content-type": file.type || "application/octet-stream" },
-    body: file,
-  });
-
-  if (!putResponse.ok) {
-    throw new Error("بارگذاری فایل صوتی ناموفق بود.");
-  }
-
-  const finalizeResponse = await fetch(finalizeUrl, {
-    method: "POST",
-    cache: "no-store",
-  });
-
-  if (!finalizeResponse.ok) {
-    const payload = (await finalizeResponse.json().catch(() => null)) as { messageFa?: string } | null;
-    throw new Error(payload?.messageFa ?? "تأیید نهایی آپلود ناموفق بود.");
   }
 
   const pollUntilReady = async () => {
@@ -566,6 +558,7 @@ async function uploadAudioFile(file: File): Promise<AudioAttachment> {
     mediaId,
     url: getAudioPlaybackUrl(mediaId),
     duration,
+    fileName: file.name?.trim() || "audio",
   };
 }
 
@@ -705,6 +698,14 @@ const buildDashedBorderStyle = (radius: number): CSSProperties => ({
   borderRadius: `${radius}px`,
 });
 
+function cleanOptionText(value: string): string {
+  return value.trim().replace(/\s+/g, " ");
+}
+
+function normalizeOptionText(value: string): string {
+  return cleanOptionText(value).toLocaleLowerCase();
+}
+
 function LevelDots({
   value,
   onChange,
@@ -731,6 +732,265 @@ function LevelDots({
           />
         );
       })}
+    </div>
+  );
+}
+
+type FreeformSelectComboboxProps = {
+  value: string;
+  onChange: (value: string) => void;
+  options: readonly string[];
+  disabled?: boolean;
+  inputClass: string;
+  selectClass?: string;
+  placeholder?: string;
+  buttonLabel: string;
+  emptyMessage: string;
+};
+
+function FreeformSelectCombobox({
+  value,
+  onChange,
+  options,
+  disabled,
+  inputClass,
+  selectClass,
+  placeholder = "عنوان",
+  buttonLabel,
+  emptyMessage,
+}: FreeformSelectComboboxProps) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [inputValue, setInputValue] = useState(value);
+  const [searchValue, setSearchValue] = useState("");
+  const [highlightedIndex, setHighlightedIndex] = useState(-1);
+
+  useEffect(() => {
+    setInputValue(value);
+  }, [value]);
+
+  const dedupedOptions = useMemo(() => {
+    const seen = new Set<string>();
+    return options.filter((option) => {
+      const key = normalizeOptionText(option);
+      if (!key || seen.has(key)) {
+        return false;
+      }
+      seen.add(key);
+      return true;
+    });
+  }, [options]);
+
+  const filteredOptions = useMemo(() => {
+    const query = normalizeOptionText(searchValue);
+    if (!query) {
+      return dedupedOptions;
+    }
+
+    return dedupedOptions.filter((option) => normalizeOptionText(option).includes(query));
+  }, [dedupedOptions, searchValue]);
+
+  useEffect(() => {
+    if (!isOpen) {
+      setHighlightedIndex(-1);
+      return;
+    }
+
+    setHighlightedIndex(filteredOptions.length > 0 ? 0 : -1);
+  }, [filteredOptions.length, isOpen]);
+
+  const commitValue = useCallback(
+    (nextValue?: string) => {
+      const cleaned = cleanOptionText(nextValue ?? inputValue);
+      onChange(cleaned);
+      setInputValue(cleaned);
+      setSearchValue("");
+    },
+    [inputValue, onChange],
+  );
+
+  const selectOption = useCallback(
+    (option: string) => {
+      onChange(option);
+      setInputValue(option);
+      setSearchValue("");
+      setIsOpen(false);
+      setHighlightedIndex(-1);
+    },
+    [onChange],
+  );
+
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      if (containerRef.current?.contains(event.target as Node)) {
+        return;
+      }
+
+      commitValue();
+      setSearchValue("");
+      setIsOpen(false);
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => document.removeEventListener("pointerdown", handlePointerDown);
+  }, [commitValue, isOpen]);
+
+  return (
+    <div ref={containerRef} className="relative flex-1">
+      <input
+        ref={inputRef}
+        type="text"
+        value={inputValue}
+        onChange={(event) => {
+          setInputValue(event.target.value);
+          setSearchValue(event.target.value);
+          onChange(event.target.value);
+          if (!isOpen) {
+            setIsOpen(true);
+          }
+        }}
+        onFocus={() => {
+          setSearchValue("");
+          setIsOpen(true);
+        }}
+        onBlur={() => {
+          window.setTimeout(() => {
+            if (containerRef.current?.contains(document.activeElement)) {
+              return;
+            }
+
+            commitValue();
+            setSearchValue("");
+            setIsOpen(false);
+          }, 0);
+        }}
+        onKeyDown={(event) => {
+          if (event.key === "ArrowDown") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              filteredOptions.length === 0 ? -1 : Math.min(prev + 1, filteredOptions.length - 1),
+            );
+            return;
+          }
+
+          if (event.key === "ArrowUp") {
+            event.preventDefault();
+            setIsOpen(true);
+            setHighlightedIndex((prev) =>
+              filteredOptions.length === 0 ? -1 : Math.max(prev - 1, 0),
+            );
+            return;
+          }
+
+          if (event.key === "Enter") {
+            if (isOpen && highlightedIndex >= 0 && filteredOptions[highlightedIndex]) {
+              event.preventDefault();
+              selectOption(filteredOptions[highlightedIndex]);
+              return;
+            }
+
+            commitValue();
+            setIsOpen(false);
+            return;
+          }
+
+          if (event.key === "Escape") {
+            setInputValue(value);
+            setSearchValue("");
+            setIsOpen(false);
+          }
+        }}
+        disabled={disabled}
+        placeholder={placeholder}
+        autoComplete="off"
+        className={`${inputClass} w-full pl-10`}
+      />
+
+      <button
+        type="button"
+        onClick={() => {
+          if (disabled) {
+            return;
+          }
+
+          if (isOpen) {
+            commitValue();
+            setSearchValue("");
+            setIsOpen(false);
+          } else {
+            setSearchValue("");
+            setIsOpen(true);
+          }
+          inputRef.current?.focus();
+        }}
+        disabled={disabled}
+        aria-label={buttonLabel}
+        className="absolute left-3 top-1/2 -translate-y-1/2"
+      >
+        <svg
+
+  className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[#BDBDBD]"
+
+  viewBox="0 0 24 24"
+
+  fill="none"
+
+  xmlns="http://www.w3.org/2000/svg"
+
+  aria-hidden="true"
+
+>
+
+  <path
+
+    d="M6 9L12 15L18 9"
+
+    stroke="currentColor"
+
+    strokeWidth="2.5"
+
+    strokeLinecap="round"
+
+    strokeLinejoin="round"
+
+  />
+
+</svg>
+      </button>
+
+      {isOpen ? (
+        <div
+          className={`absolute left-0 right-0 top-[calc(100%+6px)] z-20 max-h-48 overflow-y-auto rounded-[18px] border border-[#E1E1E1] bg-white py-1 shadow-[0_10px_24px_rgba(0,0,0,0.10)] ${
+            selectClass ?? ""
+          }`}
+        >
+          {filteredOptions.length > 0 ? (
+            filteredOptions.map((option, index) => (
+              <button
+                key={option}
+                type="button"
+                onMouseDown={(event) => event.preventDefault()}
+                onClick={() => selectOption(option)}
+                className={`flex w-full items-center justify-between px-4 py-2 text-right text-[12px] text-[#5C5A5A] ${
+                  highlightedIndex === index ? "bg-[#FFF4EC] text-[#FF7F19]" : "hover:bg-[#F7F7F7]"
+                }`}
+              >
+                <span>{option}</span>
+              </button>
+            ))
+          ) : (
+            <div className="px-4 py-3 text-right text-[12px] text-[#8B8B8B]">
+              {emptyMessage}
+            </div>
+          )}
+        </div>
+      ) : null}
     </div>
   );
 }
@@ -793,32 +1053,42 @@ function AudioUploadField({
       <input
         ref={inputRef}
         type="file"
-        accept="audio/*"
+        accept={AUDIO_ACCEPT}
         className="hidden"
         onChange={handleFileChange}
         disabled={disabled || isUploading}
       />
-      <button
-        type="button"
-        onClick={() => inputRef.current?.click()}
-        disabled={disabled || isUploading}
-        className="flex h-[30px] w-full items-center justify-center rounded-full bg-[#EDEDED] px-3 text-[11px] text-[#6B6B6B]"
-      >
-        {isUploading ? "در حال آپلود..." : "بارگذاری فایل صوتی +"}
-      </button>
       {value ? (
-        <>
-          <span className="text-[#4B4B4B]">فایل صوتی انتخاب شد</span>
+        <div className="flex max-w-full items-center gap-2 rounded-full bg-[#EDEDED] px-3 py-1.5">
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={disabled || isUploading}
+            className="max-w-[220px] truncate text-[11px] text-[#4B4B4B]"
+            title={getAudioAttachmentLabel(value)}
+          >
+            {isUploading ? "در حال آپلود..." : getAudioAttachmentLabel(value)}
+          </button>
           <button
             type="button"
             onClick={() => onChange(null)}
             disabled={disabled || isUploading}
-            className="text-[#D56732]"
+            className="text-[16px] leading-none text-[#8B8B8B]"
+            aria-label="حذف فایل صوتی"
           >
-            حذف
+            ×
           </button>
-        </>
-      ) : null}
+        </div>
+      ) : (
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          disabled={disabled || isUploading}
+          className="flex h-[30px] w-full items-center justify-center rounded-full bg-[#EDEDED] px-3 text-[11px] text-[#6B6B6B]"
+        >
+          {isUploading ? "در حال آپلود..." : "بارگذاری فایل صوتی +"}
+        </button>
+      )}
     </div>
   );
 }
@@ -837,7 +1107,7 @@ function AudioRow({
   const [isPlaying, setIsPlaying] = useState(false);
   const waveformRef = useRef<WaveformAudioPlayerHandle | null>(null);
 
-  const title = entry.title.trim() || "فایل صوتی بدون عنوان";
+  const title = entry.title.trim() || getAudioAttachmentLabel(entry.audio);
   const durationLabel = formatAudioDuration(entry.audio.duration);
 
   const handleToggle = () => {
@@ -1072,11 +1342,35 @@ function VideoUploadCard({
           <label className="text-[15px] text-[#5C5A5A]">تاریخ ضبط</label>
           <div className="flex items-center gap-3">
             <div className="relative">
-              <img
-                src="/images/flash-down.png"
-                alt=""
-                className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-              />
+<svg
+
+  className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2 text-[#BDBDBD]"
+
+  viewBox="0 0 24 24"
+
+  fill="none"
+
+  xmlns="http://www.w3.org/2000/svg"
+
+  aria-hidden="true"
+
+>
+
+  <path
+
+    d="M6 9L12 15L18 9"
+
+    stroke="currentColor"
+
+    strokeWidth="2.5"
+
+    strokeLinecap="round"
+
+    strokeLinejoin="round"
+
+  />
+
+</svg>
               <select
                 className="h-[35px] w-[90px] appearance-none rounded-full bg-[#EFEFEF] pl-8 pr-4 text-[12px] text-[#7A7A7A] focus:outline-none"
                 value={value.recordedMonth}
@@ -1093,11 +1387,21 @@ function VideoUploadCard({
             </div>
 
             <div className="relative">
-              <img
-                src="/images/flash-down.png"
-                alt=""
+              <svg
                 className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-              />
+                viewBox="0 0 24 24"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+                aria-hidden="true"
+              >
+                <path
+                  d="M6 9L12 15L18 9"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
               <select
                 className="h-[35px] w-[110px] appearance-none rounded-full bg-[#EFEFEF] pl-8 pr-4 text-[12px] text-[#7A7A7A] focus:outline-none"
                 value={value.recordedYear}
@@ -1492,7 +1796,21 @@ function SkillCombobox({
         aria-label="باز کردن فهرست مهارت‌ها"
         className="absolute left-3 top-1/2 -translate-y-1/2"
       >
-        <img src="/images/flash-down.png" alt="" className="h-3 w-3" />
+        <svg
+          className="h-3 w-3"
+          viewBox="0 0 24 24"
+          fill="none"
+          xmlns="http://www.w3.org/2000/svg"
+          aria-hidden="true"
+        >
+          <path
+            d="M6 9L12 15L18 9"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          />
+        </svg>
       </button>
 
       {isOpen ? (
@@ -1618,15 +1936,30 @@ function EditProfileGalleryPane({
           type="button"
           onClick={onSave}
           disabled={isBusy}
-          className="flex h-[44px] w-full max-w-[220px] flex-row-reverse items-center justify-center gap-2 rounded-full bg-[#FF7F19] text-[15px] font-bold text-white md:w-[177px]"
+          className="flex h-[38px] w-full max-w-[240px] items-center justify-center gap-2 rounded-full text-[12px] font-semibold text-[#F58A1F] sm:w-[180px]"
         >
           <span>ذخیره و صفحه بعد</span>
-          <img
-            src="/images/vecteezy_arrow-small-left_33295051.png"
-            alt=""
-            className="h-4 w-4"
-            loading="lazy"
-          />
+              <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M19 12H5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 5L5 12L12 19"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
         </button>
       </div>
     </div>
@@ -1698,6 +2031,7 @@ export function PortfolioEditCenterPane({
           mediaId: entry.mediaId,
           url: entry.url,
           duration: entry.duration ?? null,
+          fileName: entry.fileName ?? null,
         },
       }));
   });
@@ -1765,6 +2099,7 @@ export function PortfolioEditCenterPane({
               mediaId: language.mediaId,
               url: language.url,
               duration: language.duration ?? null,
+              fileName: language.fileName ?? null,
             }
           : null,
     })),
@@ -1774,12 +2109,14 @@ export function PortfolioEditCenterPane({
     initialValues.accents.map((accent) => ({
       id: createId(),
       title: accent.title,
+      level: typeof accent.level === "number" ? accent.level : null,
       audio:
         accent.mediaId && accent.url
           ? {
               mediaId: accent.mediaId,
               url: accent.url,
               duration: accent.duration ?? null,
+              fileName: accent.fileName ?? null,
             }
           : null,
     })),
@@ -1930,7 +2267,10 @@ export function PortfolioEditCenterPane({
   };
 
   const handleAddAccent = () => {
-    setAccents((prev) => [...prev, { id: createId(), title: "", audio: null }]);
+    setAccents((prev) => [
+      ...prev,
+      { id: createId(), title: "", level: null, audio: null },
+    ]);
   };
 
   const handleAddResume = () => {
@@ -2050,6 +2390,20 @@ export function PortfolioEditCenterPane({
     );
   };
 
+  const setLanguageAudio = (id: string, audio: AudioAttachment | null) => {
+    updateLanguageEntry(id, { audio });
+    if (!audio) {
+      setActiveAudioId((prev) => (prev === `language-${id}` ? null : prev));
+    }
+  };
+
+  const setAccentAudio = (id: string, audio: AudioAttachment | null) => {
+    updateAccentEntry(id, { audio });
+    if (!audio) {
+      setActiveAudioId((prev) => (prev === `accent-${id}` ? null : prev));
+    }
+  };
+
   const updateAwardEntry = (id: string, patch: Partial<AwardEntryState>) => {
     setAwards((prev) =>
       prev.map((entry) => (entry.id === id ? { ...entry, ...patch } : entry)),
@@ -2092,7 +2446,7 @@ export function PortfolioEditCenterPane({
       }
       pushItem({
         key: `language-${entry.id}`,
-        title: entry.label,
+        title: entry.label.trim() || getAudioAttachmentLabel(audio),
         audio,
         source: "language",
         sourceId: entry.id,
@@ -2106,7 +2460,7 @@ export function PortfolioEditCenterPane({
       }
       pushItem({
         key: `accent-${entry.id}`,
-        title: entry.title,
+        title: entry.title.trim() || getAudioAttachmentLabel(audio),
         audio,
         source: "accent",
         sourceId: entry.id,
@@ -2466,6 +2820,7 @@ export function PortfolioEditCenterPane({
         url: entry.audio?.url ?? "",
         title: entry.title.trim() ? entry.title.trim() : null,
         duration: entry.audio?.duration ?? null,
+        fileName: entry.audio?.fileName?.trim() || null,
       }));
   }, [voices]);
 
@@ -2647,6 +3002,7 @@ export function PortfolioEditCenterPane({
               mediaId: entry.audio.mediaId,
               url: entry.audio.url,
               duration: entry.audio.duration ?? null,
+              fileName: entry.audio.fileName?.trim() || null,
             }
           : {}),
       });
@@ -2657,6 +3013,7 @@ export function PortfolioEditCenterPane({
 
     for (const entry of accents) {
       const title = entry.title.trim();
+      const level = entry.level ?? null;
       if (!title) {
         continue;
       }
@@ -2670,11 +3027,17 @@ export function PortfolioEditCenterPane({
       seenAccents.add(key);
       accentPayload.push({
         title,
+        ...(level
+          ? {
+              level,
+            }
+          : {}),
         ...(entry.audio
           ? {
               mediaId: entry.audio.mediaId,
               url: entry.audio.url,
               duration: entry.audio.duration ?? null,
+              fileName: entry.audio.fileName?.trim() || null,
             }
           : {}),
       });
@@ -2824,17 +3187,11 @@ export function PortfolioEditCenterPane({
           return;
         }
 
-        const galleryResult = await persistGallery();
-        if (!galleryResult.ok) {
-          setFormError(galleryResult.error ?? "ذخیره گالری ناموفق بود.");
-          return;
-        }
-
         toast({
           title: "اطلاعات ذخیره شد.",
-          description: "پورتفولیو با موفقیت به‌روزرسانی شد.",
+          description: "اطلاعات این بخش با موفقیت به‌روزرسانی شد.",
         });
-        onSaved();
+        setActiveTab("gallery");
         router.refresh();
       })().catch(() => {
         setFormError("خطایی رخ داد. لطفاً دوباره تلاش کنید.");
@@ -2853,7 +3210,7 @@ export function PortfolioEditCenterPane({
   return (
     <section
       aria-label="فرم ویرایش پورتفولیو"
-      className={`fixed left-0 right-0 bottom-0 top-[calc(var(--mobile-header-h,72px)+env(safe-area-inset-top))] z-40 w-screen overflow-x-hidden overflow-y-auto bg-white shadow-[0_10px_30px_rgba(0,0,0,0.10)] md:absolute md:left-[273px] md:right-auto md:top-[315px] md:h-[804px] ${
+      className={`relative z-40 w-full overflow-x-hidden bg-white shadow-[0_10px_30px_rgba(0,0,0,0.10)] md:absolute md:left-[273px] md:right-auto md:top-[315px] md:h-[804px] ${
         activeTab === "gallery" ? "md:w-[797px]" : "md:w-[797px]"
       } md:overflow-hidden md:rounded-[20px]`}
       style={{ "--edit-profile-bottom-nav-h": `${EDIT_PROFILE_MOBILE_BOTTOM_NAV_H}px` } as CSSProperties & {
@@ -2883,7 +3240,7 @@ export function PortfolioEditCenterPane({
         <input
           ref={galleryInputRef}
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept={IMAGE_ACCEPT}
           className="hidden"
           onChange={handleGalleryFileChange}
           disabled={isBusy}
@@ -2891,7 +3248,7 @@ export function PortfolioEditCenterPane({
         <input
           ref={videoInputRef}
           type="file"
-          accept="video/*"
+          accept={VIDEO_ACCEPT}
           className="hidden"
           onChange={handleVideoFileChange}
           disabled={isBusy}
@@ -2953,11 +3310,21 @@ export function PortfolioEditCenterPane({
               <label className={sectionTitleClass}>محل سکونت</label>
               <div className="grid grid-cols-1 justify-items-start gap-4 sm:grid-cols-2">
                 <div className="relative w-full">
-                  <img
-                    src="/images/flash-down.png"
-                    alt=""
+                  <svg
                     className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                  />
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   <select
                     className={`${selectClass} pl-8 w-full`}
                     value={selectedProvinceId}
@@ -2983,11 +3350,21 @@ export function PortfolioEditCenterPane({
                 </div>
 
                 <div className="relative w-full">
-                  <img
-                    src="/images/flash-down.png"
-                    alt=""
+                  <svg
                     className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                  />
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   <select
                     className={`${selectClass} pl-8 w-full`}
                     value={cityId}
@@ -3009,11 +3386,21 @@ export function PortfolioEditCenterPane({
               <label className={sectionTitleClass}>تاریخ تولد</label>
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div className="relative">
-                  <img
-                    src="/images/flash-down.png"
-                    alt=""
+                  <svg
                     className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                  />
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   <select
                     className={`${selectClass} pl-8`}
                     value={birthDate.day}
@@ -3033,11 +3420,21 @@ export function PortfolioEditCenterPane({
                 </div>
 
                 <div className="relative">
-                  <img
-                    src="/images/flash-down.png"
-                    alt=""
+                  <svg
                     className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                  />
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   <select
                     className={`${selectClass} pl-8`}
                     value={birthDate.month}
@@ -3057,11 +3454,21 @@ export function PortfolioEditCenterPane({
                 </div>
 
                 <div className="relative">
-                  <img
-                    src="/images/flash-down.png"
-                    alt=""
+                  <svg
                     className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                  />
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    xmlns="http://www.w3.org/2000/svg"
+                    aria-hidden="true"
+                  >
+                    <path
+                      d="M6 9L12 15L18 9"
+                      stroke="currentColor"
+                      strokeWidth="2.5"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    />
+                  </svg>
                   <select
                     className={`${selectClass} pl-8`}
                     value={birthDate.year}
@@ -3113,11 +3520,21 @@ export function PortfolioEditCenterPane({
                   return (
                     <div key={entry.id} className="space-y-2">
                       <div className="relative">
-                        <img
-                          src="/images/flash-down.png"
-                          alt=""
+                        <svg
                           className="pointer-events-none absolute left-3 top-1/2 h-3 w-3 -translate-y-1/2"
-                        />
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          xmlns="http://www.w3.org/2000/svg"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M6 9L12 15L18 9"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
                         <select
                           className={`${selectClass} pl-8`}
                           value={entry.degreeLevel}
@@ -3223,14 +3640,15 @@ export function PortfolioEditCenterPane({
                     {/* Right side: Title + Level */}
                     <div className="flex items-center gap-6">
                       {/* Title */}
-                      <input
-                        className={`${inputClass} w-full md:w-[360px]`}
-                        placeholder="عنوان"
+                      <FreeformSelectCombobox
                         value={entry.label}
-                        onChange={(event) =>
-                          updateLanguageEntry(entry.id, { label: event.target.value })
-                        }
+                        onChange={(value) => updateLanguageEntry(entry.id, { label: value })}
+                        options={LANGUAGE_LABEL_OPTIONS}
                         disabled={isBusy}
+                        inputClass={`${inputClass} w-full md:w-[360px]`}
+                        placeholder="عنوان"
+                        buttonLabel="باز کردن فهرست زبان‌ها"
+                        emptyMessage="موردی پیدا نشد. همین متن به عنوان زبان ذخیره می‌شود."
                       />
 
                       {/* Level */}
@@ -3260,7 +3678,7 @@ export function PortfolioEditCenterPane({
                   <div className="mt-3">
                     <AudioUploadField
                       value={entry.audio}
-                      onChange={(audio) => updateLanguageEntry(entry.id, { audio })}
+                      onChange={(audio) => setLanguageAudio(entry.id, audio)}
                       onUploadStart={() => setUploadingCount((prev) => prev + 1)}
                       onUploadEnd={() =>
                         setUploadingCount((prev) => (prev > 0 ? prev - 1 : 0))
@@ -3290,16 +3708,29 @@ export function PortfolioEditCenterPane({
                   key={entry.id}
                   className="ml-0 rounded-[16px] border border-[#E3E3E3] bg-white px-4 py-3 md:ml-8"
                 >
-                  <div className="flex flex-wrap items-center justify-between gap-4">
-                    <input
-                      className={`${inputClass} w-full md:w-[360px]`}
-                      placeholder="عنوان"
-                      value={entry.title}
-                      onChange={(event) =>
-                        updateAccentEntry(entry.id, { title: event.target.value })
-                      }
-                      disabled={isBusy}
-                    />
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-6">
+                      <FreeformSelectCombobox
+                        value={entry.title}
+                        onChange={(value) => updateAccentEntry(entry.id, { title: value })}
+                        options={ACCENT_VALUE_OPTIONS}
+                        disabled={isBusy}
+                        inputClass={`${inputClass} w-full md:w-[360px]`}
+                        placeholder="عنوان"
+                        buttonLabel="باز کردن فهرست لهجه‌ها"
+                        emptyMessage="موردی پیدا نشد. همین متن به عنوان لهجه ذخیره می‌شود."
+                      />
+
+                      <div className="flex items-center gap-3">
+                        <span className="text-[11px] w-[60px] text-[#7A7A7A]">میزان تسلط</span>
+                        <LevelDots
+                          value={entry.level}
+                          onChange={(level) => updateAccentEntry(entry.id, { level })}
+                          disabled={isBusy}
+                        />
+                      </div>
+                    </div>
+
                     <button
                       type="button"
                       onClick={() =>
@@ -3314,7 +3745,7 @@ export function PortfolioEditCenterPane({
                   <div className="mt-3">
                     <AudioUploadField
                       value={entry.audio}
-                      onChange={(audio) => updateAccentEntry(entry.id, { audio })}
+                      onChange={(audio) => setAccentAudio(entry.id, audio)}
                       onUploadStart={() => setUploadingCount((prev) => prev + 1)}
                       onUploadEnd={() =>
                         setUploadingCount((prev) => (prev > 0 ? prev - 1 : 0))
@@ -3665,15 +4096,30 @@ export function PortfolioEditCenterPane({
                 type="button"
                 onClick={handleVideosSave}
                 disabled={isBusy}
-                className="flex h-[44px] w-full max-w-[220px] flex-row-reverse items-center justify-center gap-2 rounded-full bg-[#FF7F19] text-[15px] font-bold text-white md:w-[177px]"
+                className="flex h-[38px] w-full max-w-[240px] items-center justify-center gap-2 rounded-full text-[12px] font-semibold text-[#F58A1F] sm:w-[180px]"
               >
                 <span>ذخیره و صفحه بعد</span>
-                <img
-                  src="/images/vecteezy_arrow-small-left_33295051.png"
-                  alt=""
-                  className="h-4 w-4"
-                  loading="lazy"
-                />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M19 12H5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 5L5 12L12 19"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           </div>
@@ -3734,15 +4180,30 @@ export function PortfolioEditCenterPane({
                 type="button"
                 onClick={handleVoicesSave}
                 disabled={isBusy}
-                className="flex h-[44px] w-full max-w-[220px] flex-row-reverse items-center justify-center gap-2 rounded-full bg-[#FF7F19] text-[15px] font-bold text-white md:w-[177px]"
+                className="flex h-[38px] w-full max-w-[240px] items-center justify-center gap-2 rounded-full text-[12px] font-semibold text-[#F58A1F] sm:w-[180px]"
               >
                 <span>ذخیره و صفحه بعد</span>
-                <img
-                  src="/images/vecteezy_arrow-small-left_33295051.png"
-                  alt=""
-                  className="h-4 w-4"
-                  loading="lazy"
-                />
+                <svg
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  className="shrink-0"
+                >
+                  <path
+                    d="M19 12H5"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                  />
+                  <path
+                    d="M12 5L5 12L12 19"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </button>
             </div>
           </div>
@@ -3765,9 +4226,24 @@ export function PortfolioEditCenterPane({
                           type="button"
                           onClick={() => handleDeleteAward(entry.id)}
                           disabled={isBusy}
-                          className="text-[12px] text-[#D56732]"
+                          className="px-4 text-[12px] text-[#D56732] font-bold"
                         >
-                          حذف
+                        <svg
+                          width="16"
+                          height="16"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="1.8"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        >
+                          <path d="M3 6h18" />
+                          <path d="M8 6V4h8v2" />
+                          <path d="M19 6l-1 14H6L5 6" />
+                          <path d="M10 11v6" />
+                          <path d="M14 11v6" />
+                        </svg>  
                         </button>
                       </div>
                       <div className="mt-3 grid grid-cols-1 gap-4 md:grid-cols-2">

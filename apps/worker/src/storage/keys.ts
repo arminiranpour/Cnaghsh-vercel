@@ -22,16 +22,27 @@ const getOriginalKey = (ownerUserId: string, mediaId: string, ext: string) => {
   return joinKey("uploads/originals", ownerUserId, `${mediaId}.${safeExt}`);
 };
 
-const getHlsManifestKey = (mediaId: string) => {
-  return joinKey("processed/hls", mediaId, "index.m3u8");
+const getImageVariantKey = (mediaId: string, width: number) => {
+  return joinKey("processed/images", mediaId, `${Math.max(1, Math.round(width))}.webp`);
 };
 
-const getHlsVariantPrefix = (mediaId: string, variant: string) => {
-  return joinKey("processed/hls", mediaId, `v${variant}`);
+const getVideoOutputKey = (mediaId: string, variant: string) => {
+  return joinKey("processed/video", mediaId, `${normalizeSegment(variant)}.mp4`);
+};
+
+const getAudioOutputKey = (mediaId: string) => {
+  return joinKey("processed/audio", `${mediaId}.mp3`);
 };
 
 const getPosterKey = (mediaId: string) => {
-  return joinKey("processed/posters", `${mediaId}.jpg`);
+  return joinKey("processed/posters", `${mediaId}.webp`);
 };
 
-export { getHlsManifestKey, getHlsVariantPrefix, getOriginalKey, getPosterKey, joinKey };
+export {
+  getAudioOutputKey,
+  getImageVariantKey,
+  getOriginalKey,
+  getPosterKey,
+  getVideoOutputKey,
+  joinKey,
+};

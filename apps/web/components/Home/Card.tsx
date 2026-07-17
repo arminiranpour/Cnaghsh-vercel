@@ -1,5 +1,9 @@
 import Image from "next/image";
 
+const DEFAULT_STAR_SRC =
+  "/cineflash/home/Bazigaran/vecteezy_set-of-star-rotate-game-sprite-animation-ui-rate_14320508 [Converted] 1.svg";
+const DEFAULT_PROFILE_SRC = "/cineflash/home/Bazigaran/11392 1.svg";
+
 type FeaturedCardProps = {
   name: string;
   age?: number | null;
@@ -9,6 +13,7 @@ type FeaturedCardProps = {
   frameSrc?: string;
   hoverFrameSrc?: string;
   starSrc?: string;
+  placeholderSrc?: string;
 };
 
 export default function Card({
@@ -17,27 +22,26 @@ export default function Card({
   level,
   rating,
   avatarSrc,
-  frameSrc = "/cineflash/home/Bazigaran/CardFrame.png",
-  hoverFrameSrc = "/cineflash/home/Bazigaran/Actors frame 1.png",
-  starSrc = "/cineflash/home/Bazigaran/Star.png",
+  starSrc = DEFAULT_STAR_SRC,
+  placeholderSrc = DEFAULT_PROFILE_SRC,
 }: FeaturedCardProps) {
-  const STAR_W = 12;
-  const STAR_H = 11;
-  const NUM_H = 19;
+  const faNumber = new Intl.NumberFormat("fa-IR");
   const resolvedAvatarSrc =
     avatarSrc && avatarSrc.trim()
       ? avatarSrc
-      : "/cineflash/home/Header/user.png";
+      : placeholderSrc;
+  const ratingLabel =
+    typeof rating === "number" ? faNumber.format(rating) : null;
   const ageLabel =
     typeof age === "number"
-      ? `سن: ${age} سال`
+      ? `سن: ${faNumber.format(age)} سال`
       : "سن ثبت نشده";
 
   return (
     <div
       className="
         transition-transform duration-300 ease-out
-        w-[280px] h-[312px]
+        w-[220px] h-[312px]
         hover:scale-[1.25]
         flex items-center justify-center
         origin-center
@@ -47,155 +51,71 @@ export default function Card({
     >
       <div
         className="
-          relative flex flex-col items-center justify-start text-center
+          relative h-full w-full overflow-hidden rounded-[22px] text-center
           w-[280px] h-[312px]
         "
       >
-        {/* Default Frame */}
-        <div className="absolute inset-0 pointer-events-none transition-opacity duration-300 ease-out group-hover:opacity-0">
-          <Image
-            src={frameSrc}
-            alt="قاب کارت"
-            fill
-            unoptimized
-            sizes="280px"
-            style={{ objectFit: "contain" }}
-          />
-        </div>
+        <div className="absolute inset-0 rounded-[22px] border border-[#8C8C8C] bg-transparent transition-opacity duration-300 ease-out group-hover:opacity-0" />
+        <div className="absolute inset-0 rounded-[24px] border-2 border-[#FF7F19] bg-transparent opacity-0 shadow-[0_0_0_1px_rgba(255,127,25,0.2),0_12px_24px_rgba(255,127,25,0.22)] transition-opacity duration-300 ease-out group-hover:opacity-100" />
 
-        {/* Hover Frame */}
-        <div className="absolute inset-0 pointer-events-none opacity-0 transition-opacity duration-300 ease-out group-hover:opacity-100">
-          <Image
-            src={hoverFrameSrc}
-            alt="قاب کارت"
-            fill
-            unoptimized
-            sizes="280px"
-            style={{ objectFit: "contain" }}
-          />
-        </div>
-
-        {/* Avatar */}
-        <div
-          className="absolute overflow-hidden"
-          style={{
-            top: 57,
-            left: 84,
-            width: 113,
-            height: 99,
-            borderRadius: "15px",
-          }}
-        >
-          <Image
-            src={resolvedAvatarSrc}
-            alt={name}
-            fill
-            sizes="113px"
-            style={{ objectFit: "cover" }}
-          />
-        </div>
-
-    {/* Rating + Star + Level */}
-    {typeof rating === "number" || level ? (
-      
-      <div
-        className="absolute flex items-center justify-center gap-[32px] font-iransans"
-        style={{
-          top: 176,
-          left: 0,
-          width: "100%",
-          height: 18,
-        }}
-      >
-                {level ? (
+        <div className="relative flex h-full flex-col items-center px-[6.25%] pb-[11%] pt-[4.2%]">
           <div
-            className="flex items-center justify-center"
+            className="relative w-full overflow-hidden rounded-[15px]"
             style={{
-              width: 47,
-              height: 14,
-              backgroundColor: "#FF7F19",
-              borderRadius: 19,
+              height: "53.3%",
             }}
           >
-            <span
-              style={{
-                fontFamily: "IRANSans",
-                fontSize: 10,
-                color: "#ffffff",
-                lineHeight: "14px",
-                fontWeight: 500,
-              }}
-            >
-              {level}
-            </span>
+            <Image
+              src={resolvedAvatarSrc}
+              alt={name}
+              fill
+              unoptimized
+              sizes="280px"
+              style={{ objectFit: "cover" }}
+            />
           </div>
-        ) : null}
-        {typeof rating === "number" ? (
-          <div className="flex items-center gap-1">
-            <span
-              style={{
-                fontSize: 12,
-                fontWeight: 600,
-                lineHeight: `${NUM_H}px`,
-                color: "#FF7F19",
-              }}
-            >
-              {rating}
-            </span>
-            <div
-              className="relative -translate-y-[2px]"
-              style={{
-                width: STAR_W,
-                height: STAR_H,
-              }}
-            >
-              <Image
-                src={starSrc}
-                alt="ستاره"
-                fill
-                unoptimized
-                sizes={`${STAR_W}px`}
-                style={{ objectFit: "contain" }}
-              />
+
+          {ratingLabel || level ? (
+            <div className="mt-[6.5%] flex w-full items-center justify-between px-[8.5%] font-iransans">
+              {ratingLabel ? (
+                <div className="flex items-center gap-1.5 text-[#FFB200]">
+                  <div className="relative h-[11px] w-[12px] shrink-0">
+                    <Image
+                      src={starSrc}
+                      alt="ستاره"
+                      fill
+                      unoptimized
+                      sizes="12px"
+                      style={{ objectFit: "contain" }}
+                    />
+                  </div>
+                  <span className="text-[12px] font-medium leading-[19px] text-[#FF9A1A]">
+                    {ratingLabel}
+                  </span>
+                </div>
+              ) : (
+                <div />
+              )}
+
+              {level ? (
+                <div className="flex min-h-[20px] min-w-[53px] items-center justify-center rounded-full bg-[#FF7F19] px-2.5">
+                  <span className="font-iransans text-[10px] font-medium leading-none text-white">
+                    {level}
+                  </span>
+                </div>
+              ) : null}
             </div>
+          ) : null}
 
-
+          <div className="mt-[25%] flex w-full flex-1 flex-col items-center justify-start px-[10%]">
+            <div className="font-iransans text-[18px] font-extrabold leading-[1.45] text-[#111111]">
+              {name}
+            </div>
+            <div className="mt-[3%] font-iransans text-[11px] font-normal leading-[1.55] text-[#111111]">
+              {ageLabel}
+            </div>
           </div>
-        ) : null}
-
-
-      </div>
-    ) : null}
-
-    {/* Name + Age */}
-    <div
-      className="absolute w-full text-center"
-      style={{ bottom: 58, left: 0 }}
-    >
-      <div
-        style={{
-          fontFamily: "IRANSans",
-          fontSize: 18,
-          fontWeight: 800,
-          color: "#0F0F0F",
-          lineHeight: "34px",
-        }}
-      >
-        {name}
-      </div>
-
-      <div
-        style={{
-          marginTop: 6,
-          fontFamily: "IRANSans",
-          fontSize: 11,
-          fontWeight: 400,
-          color: "#0F0F0F",
-        }}
-      >
-        {ageLabel}
-      </div>
-    </div>
+        </div>
       </div>
     </div>
   );

@@ -91,6 +91,65 @@ const providerOptions: { id: ProviderName; label: string }[] = [
   { id: "nextpay", label: "نکست‌پی" },
 ];
 
+const FREE_PLAN_FEATURES = [
+  { label: "امکان ساخت پروفایل و وارد کردن اطلاعات پایه", enabled: true },
+  { label: "نمایش در فهرست بازیگران و جستوجوی پیشرفته", enabled: true },
+  { label: "امکان دریافت پیام و گفتوگو با عوامل", enabled: true },
+  { label: "امکان بارگزاری عکس و ویدئو و فایل صوتی", enabled: false },
+  { label: "دسترسی به بخش‌های مختلف وب‌سایت", enabled: false },
+  { label: "دسترسی به فراخوان‌ها", enabled: false },
+  { label: "امکان شرکت در مسابقات و چالش و رویدادها", enabled: false },
+  { label: "امکان برخورداری از مشاوره و آموزش‌ها", enabled: false },
+] as const;
+
+const PAID_PLAN_FEATURES = [
+  { label: "امکان ساخت پروفایل و وارد کردن اطلاعات پایه", enabled: true },
+  { label: "نمایش در فهرست بازیگران و جستوجوی پیشرفته", enabled: true },
+  { label: "امکان دریافت پیام و گفتوگو با عوامل", enabled: true },
+  { label: "امکان بارگزاری عکس و ویدئو و فایل صوتی", enabled: true },
+  { label: "دسترسی به بخش‌های مختلف وب‌سایت", enabled: true },
+  { label: "دسترسی به فراخوان‌ها", enabled: true },
+  { label: "امکان شرکت در مسابقات و چالش و رویدادها", enabled: true },
+  { label: "امکان برخورداری از مشاوره و آموزش‌ها", enabled: true },
+] as const;
+
+const cadencePriority: CadenceKey[] = ["monthly", "quarterly", "annual"];
+
+const getCadenceLabel = (cadence: string, cadenceLabels: CadenceLabels) => {
+  const normalized = cadence.trim().toLowerCase();
+
+  const knownLabels: Record<string, string> = {
+    monthly: "ماهانه",
+    month: "ماهانه",
+    quarterly: "سه ماهه",
+    quarter: "سه ماهه",
+    seasonal: "سه ماهه",
+    semiannual: "۶ ماهه",
+    "semi-annual": "۶ ماهه",
+    biannual: "۶ ماهه",
+    six_months: "۶ ماهه",
+    "6_months": "۶ ماهه",
+    annual: "سالانه",
+    yearly: "سالانه",
+    year: "سالانه",
+  };
+
+  return cadenceLabels[cadence as CadenceKey] ?? knownLabels[normalized] ?? cadence;
+};
+
+const getPlanTitleByCadence = (cadence: CadenceKey): string => {
+  switch (cadence) {
+    case "monthly":
+      return "اشتراک ماهیانه";
+    case "quarterly":
+      return "اشتراک سه ماهه";
+    case "annual":
+      return "اشتراک سالانه";
+    default:
+      return "اشتراک";
+  }
+};
+
 export function PricingContent({
   plans,
   cadenceLabels,
@@ -122,10 +181,10 @@ export function PricingContent({
       });
     });
 
-    return (Object.keys(cadenceLabels) as CadenceKey[]).filter((key) =>
-      available.has(key),
+    return Array.from(available).sort(
+      (a, b) => cadencePriority.indexOf(a) - cadencePriority.indexOf(b),
     );
-  }, [plans, cadenceLabels]);
+  }, [plans]);
 
   useEffect(() => {
     if (cadenceOptions.length === 0) {
@@ -247,7 +306,6 @@ export function PricingContent({
 
   return (
     <div className="space-y-10">
-
       {cadenceOptions.length > 1 && (
         <div className="flex justify-center">
           <div className="inline-flex rounded-full border border-border bg-muted/60 p-1">
@@ -262,7 +320,7 @@ export function PricingContent({
                 )}
                 onClick={() => setActiveCadence(cadence)}
               >
-                {cadenceLabels[cadence] ?? cadence}
+                {getCadenceLabel(cadence, cadenceLabels)}
               </Button>
             ))}
           </div>
@@ -274,19 +332,11 @@ export function PricingContent({
           <h2 className="text-4xl font-bold text-black mb-4">خرید اشتراک</h2>
         </div>
 
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 xl:grid-cols-3 justify-items-center">          {/* Free Plan */}
+        <div className="grid grid-cols-1 justify-items-center gap-8 lg:grid-cols-2 xl:grid-cols-3">
+          {/* Free Plan */}
           <SubscriptionPlanCard
             title="رایگان"
-            features={[
-              { label: "امکان ساخت پروفایل و وارد کردن اطلاعات پایه", enabled: true },
-              { label: "نمایش در فهرست بازیگران و جستوجوی پیشرفته", enabled: true },
-              { label: "امکان دریافت پیام و گفتوگو با عوامل", enabled: true },
-              { label: "امکان بارگزاری عکس و ویدئو و فایل صوتی", enabled: false },
-              { label: "دسترسی به بخش‌های مختلف وب‌سایت", enabled: false },
-              { label: "دسترسی به فراخوان‌ها", enabled: false },
-              { label: "امکان شرکت در مسابقات و چالش و رویدادها", enabled: false },
-              { label: "امکان برخورداری از مشاوره و آموزش‌ها", enabled: false },
-            ]}
+            features={[...FREE_PLAN_FEATURES]}
             buttonText="انتخاب"
             buttonAction={
               canCheckout
@@ -300,38 +350,23 @@ export function PricingContent({
           {/* Paid Plans */}
           {displayPlans.map(({ group, cadenceKey, cadence }) => {
             const isActivePlan = subscriptionPlanId === cadence.planId;
-            const allFeaturesEnabled = [
-              { label: "امکان ساخت پروفایل و وارد کردن اطلاعات پایه", enabled: true },
-              { label: "نمایش در فهرست بازیگران و جستوجوی پیشرفته", enabled: true },
-              { label: "امکان دریافت پیام و گفتوگو با عوامل", enabled: true },
-              { label: "امکان بارگزاری عکس و ویدئو و فایل صوتی", enabled: true },
-              { label: "دسترسی به بخش‌های مختلف وب‌سایت", enabled: true },
-              { label: "دسترسی به فراخوان‌ها", enabled: true },
-              { label: "امکان شرکت در مسابقات و چالش و رویدادها", enabled: true },
-              { label: "امکان برخورداری از مشاوره و آموزش‌ها", enabled: true },
-            ];
+            const planTitle = getPlanTitleByCadence(cadenceKey);
 
             return (
               <SubscriptionPlanCard
                 key={`${group.groupId}-${cadenceKey}`}
-                title={cadence.formattedAmount}
-                subtitle={
-                  cadenceKey === "monthly"
-                    ? "اشتراک شش ماهه"
-                    : cadenceKey === "annual"
-                      ? "اشتراک یک ساله"
-                      : undefined
-                }
-                features={allFeaturesEnabled}
+                title={planTitle}
+                subtitle={cadence.formattedAmount}
+                features={[...PAID_PLAN_FEATURES]}
                 buttonText="پرداخت"
                 buttonAction={
                   canCheckout
                     ? () =>
                         handleSelectPrice({
                           id: cadence.priceId,
-                          name: group.name,
+                          name: planTitle,
                           cadence: cadenceKey,
-                          description: cadenceLabels[cadenceKey] ?? cadenceKey,
+                          description: getCadenceLabel(cadenceKey, cadenceLabels),
                         })
                     : SIGN_IN_URL
                 }

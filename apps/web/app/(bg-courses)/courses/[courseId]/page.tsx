@@ -1,5 +1,4 @@
 import { notFound } from "next/navigation";
-import Image from "next/image";
 import Link from "next/link";
 
 import { CourseInfoPanel } from "@/components/courses/CourseInfoPanel";
@@ -170,14 +169,28 @@ export default async function CourseDetailPage({
     <div className="relative min-h-screen" dir="rtl">
       <div className="relative z-10 mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-10">
         <div className="flex justify-begin mb-4">
-          <Link href="/courses" className="inline-block">
-            <Image
-              src="/images/back-button.png"
-              alt="Back"
-              width={50}
-              height={50}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-            />
+          <Link
+            href="/courses"
+            aria-label="بازگشت به دوره‌ها"
+            className="inline-flex cursor-pointer transition-opacity hover:opacity-80"
+          >
+            <svg
+              width="50"
+              height="50"
+              viewBox="0 0 50 50"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <rect width="50" height="50" rx="8" fill="#858585" />
+              <path
+                d="M15 25H36M36 25L27 17M36 25L27 33"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
         <div className="grid gap-2 lg:grid-cols-11" data-no-transparent>

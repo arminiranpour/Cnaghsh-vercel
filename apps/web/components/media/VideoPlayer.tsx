@@ -181,6 +181,13 @@ useEffect(() => {
       return;
     }
     setIsReady(false);
+    const isHlsSource = resolvedManifestUrl.split("?")[0]?.toLowerCase().endsWith(".m3u8");
+    if (!isHlsSource) {
+      if (video.src !== resolvedManifestUrl) {
+        video.src = resolvedManifestUrl;
+      }
+      return;
+    }
     const canPlayNative = video.canPlayType("application/vnd.apple.mpegurl");
     if (canPlayNative) {
       if (video.src !== resolvedManifestUrl) {

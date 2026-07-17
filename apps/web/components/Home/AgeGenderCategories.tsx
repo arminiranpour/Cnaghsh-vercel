@@ -12,33 +12,38 @@ type Category = {
   href: string;
 };
 
+const categoryIconDefaultFilter =
+  "invert(60%) sepia(0) saturate(0) hue-rotate(180deg) brightness(0.9)";
+const categoryIconHoverFilter =
+  "brightness(0) saturate(100%) invert(63%) sepia(97%) saturate(1777%) hue-rotate(350deg) brightness(101%) contrast(101%)";
+
 const categories: Category[] = [
   {
     id: "adult-male",
     labelLine1: "بازیگران بزرگسال آقا",
     labelLine2: "",
-    iconSrc: "/cineflash/home/categories/adult-male.png",
+    iconSrc: "/cineflash/home/categories/bazigar_bozorgsal_agha.svg",
     href: "/categories/adult-male",
   },
   {
     id: "adult-female",
     labelLine1: "بازیگران بزرگسال خانم",
     labelLine2: "",
-    iconSrc: "/cineflash/home/categories/adult-female1.png",
+    iconSrc: "/cineflash/home/categories/actress_18629734.svg",
     href: "/categories/adult-female",
   },
   {
     id: "boys",
     labelLine1: "بازیگران کودک",
     labelLine2: "و نوجوان پسر",
-    iconSrc: "/cineflash/home/categories/boy.png",
+    iconSrc: "/cineflash/home/categories/Child Pic.svg",
     href: "/categories/boys",
   },
   {
     id: "girls",
     labelLine1: "بازیگران کودک",
     labelLine2: "و نوجوان دختر",
-    iconSrc: "/cineflash/home/categories/girl.png",
+    iconSrc: "/cineflash/home/categories/Child Pic.svg",
     href: "/categories/girls",
   },
 ];
@@ -87,10 +92,10 @@ export default function AgeGenderCategories() {
                   style={{
                     objectFit: "contain",
                     filter: isHovered
-      ? "invert(58%) sepia(83%) saturate(2300%) brightness(1.05) contrast(1.05)"
-      : "invert(0.60) sepia(0) saturate(0) hue-rotate(180deg) brightness(0.9)",
-    transform: cat.id === "adult-female" ? "scale(1.39)" : "scale(1)",
-    transition: "filter 0.3s ease, transform 0.3s ease",
+                      ? categoryIconHoverFilter
+                      : categoryIconDefaultFilter,
+                    transform: cat.id === "adult-female" ? "scale(1.39)" : "scale(1)",
+                    transition: "filter 0.3s ease, transform 0.3s ease",
                   }}
                   sizes="141px"
                 />

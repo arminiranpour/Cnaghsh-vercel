@@ -1,3 +1,4 @@
+import type { PlanCycle } from "@prisma/client";
 import Link from "next/link";
 
 import { Button } from "@/components/ui/button";
@@ -7,6 +8,17 @@ import { formatRials } from "@/lib/money";
 import { PricesTable } from "./prices-table";
 
 export const dynamic = "force-dynamic";
+
+const getPlanCycleLabel = (cycle: PlanCycle) => {
+  switch (cycle) {
+    case "MONTHLY":
+      return "ماهانه";
+    case "QUARTERLY":
+      return "سه ماهه";
+    case "YEARLY":
+      return "سالانه";
+  }
+};
 
 export default async function PricesPage() {
   const prices = await prisma.price.findMany({
@@ -24,7 +36,7 @@ export default async function PricesPage() {
   const rows = prices.map((price) => {
     const linkType = price.planId ? "plan" : "product";
     const linkLabel = price.planId
-      ? [price.plan?.name, price.plan?.product?.name]
+      ? [price.plan?.name, price.plan?.cycle ? getPlanCycleLabel(price.plan.cycle) : null, price.plan?.product?.name]
           .filter(Boolean)
           .join(" • ") || "پلن"
       : price.product?.name ?? "محصول";
@@ -45,7 +57,7 @@ export default async function PricesPage() {
         <div className="space-y-1">
           <h2 className="text-xl font-semibold">قیمت‌ها</h2>
           <p className="text-sm text-muted-foreground">
-            قیمت‌های اشتراک و خرید تک را مدیریت کنید.
+            قیمت اشتراک‌ها بر اساس پلن و قیمت سایر آیتم‌ها بر اساس خود محصول مدیریت می‌شود.
           </p>
         </div>
         <Button asChild>

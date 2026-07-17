@@ -6,6 +6,7 @@ export type LanguageSkill = {
   mediaId?: string;
   url?: string;
   duration?: number | null;
+  fileName?: string | null;
 };
 
 export const LANGUAGE_OPTIONS: { key: LanguageOptionKey; label: string }[] = [
@@ -75,6 +76,10 @@ export function normalizeLanguageSkills(value: unknown): LanguageSkill[] {
       Number.isFinite((entry as { duration?: number }).duration)
         ? (entry as { duration?: number }).duration
         : null;
+    const fileName =
+      typeof (entry as { fileName?: unknown }).fileName === "string"
+        ? ((entry as { fileName?: string }).fileName ?? "").trim()
+        : "";
 
     const dedupeKey = label.toLowerCase();
     if (seen.has(dedupeKey)) {
@@ -90,6 +95,7 @@ export function normalizeLanguageSkills(value: unknown): LanguageSkill[] {
             mediaId,
             url,
             duration,
+            fileName: fileName || null,
           }
         : {}),
     });

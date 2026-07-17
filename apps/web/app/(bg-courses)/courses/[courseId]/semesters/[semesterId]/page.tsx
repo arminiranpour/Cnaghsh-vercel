@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { unstable_noStore as noStore } from "next/cache";
@@ -77,13 +76,23 @@ export default async function SemesterDetailPage({
         {/* Back Button */}
         <div className="flex justify-begin mb-4">
           <Link href={`/courses/${params.courseId}`} className="inline-block">
-            <Image
-              src="/images/back-button.png"
-              alt="Back"
-              width={50}
-              height={50}
-              className="cursor-pointer hover:opacity-80 transition-opacity"
-            />
+            <svg
+              width="50"
+              height="50"
+              viewBox="0 0 50 50"
+              fill="none"
+              xmlns="http://www.w3.org/2000/svg"
+              aria-hidden="true"
+            >
+              <rect width="50" height="50" rx="8" fill="#858585" />
+              <path
+                d="M15 25H36M36 25L27 17M36 25L27 33"
+                stroke="white"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </Link>
         </div>
 

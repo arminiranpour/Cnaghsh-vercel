@@ -12,12 +12,12 @@ export const revalidate = 0;
 export const fetchCache = "force-no-store";
 
 type RouteContext = {
-  params: { mediaId: string };
+  params: Promise<{ mediaId: string }>;
 };
 
 export async function GET(_request: NextRequest, context: RouteContext) {
   try {
-    const mediaId = context.params.mediaId;
+    const { mediaId } = await context.params;
     if (!mediaId) {
       logInfo("media.status.check", { result: "missing_media_id" });
       return NextResponse.json(
@@ -77,7 +77,7 @@ export async function GET(_request: NextRequest, context: RouteContext) {
     );
   } catch (error) {
     Sentry.captureException(error);
-    const mediaId = context.params.mediaId;
+    const { mediaId } = await context.params;
     logError("media.status.check", {
       mediaId,
       result: "error",

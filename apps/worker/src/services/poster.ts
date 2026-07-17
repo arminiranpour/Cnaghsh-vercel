@@ -60,8 +60,14 @@ const generatePoster = async (
     inputPath,
     "-frames:v",
     "1",
-    "-q:v",
-    "2",
+    "-vf",
+    "scale=w='min(1280,iw)':h=-2:force_divisible_by=2",
+    "-c:v",
+    "libwebp",
+    "-compression_level",
+    "4",
+    "-quality",
+    "82",
     outputPath,
   ]);
 };

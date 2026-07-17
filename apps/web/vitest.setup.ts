@@ -18,6 +18,14 @@ process.env.DATABASE_URL ??=
 process.env.RESEND_API_KEY ??= "re_test_key";
 
 process.env.MAIL_FROM ??= "test@example.com";
+process.env.UPLOAD_ALLOWED_TYPES ??=
+  "image/jpeg,image/png,image/webp,image/heic,image/heif,video/mp4,video/quicktime,video/webm,video/x-matroska,audio/mpeg,audio/mp4,audio/x-m4a,audio/wav,audio/x-wav,audio/aac";
+process.env.UPLOAD_MAX_SIZE_MB_DEV ??= "25";
+process.env.UPLOAD_MAX_SIZE_MB_PROD ??= "25";
+process.env.UPLOAD_MAX_DURATION_SEC ??= "600";
+process.env.UPLOAD_DAILY_USER_CAP_GB ??= "1";
+process.env.UPLOAD_RATE_LIMIT_PER_MIN ??= "20";
+process.env.UPLOAD_RATE_LIMIT_BURST ??= "40";
 
 // Node 18+ already has fetch/Request/Response/FormData/Headers.
 // If you truly need Blob/File in some test, you can uncomment below:

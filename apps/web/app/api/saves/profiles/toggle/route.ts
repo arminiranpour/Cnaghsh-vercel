@@ -33,11 +33,15 @@ export async function POST(request: Request) {
   const result = await prisma.$transaction(async (tx) => {
     const profile = await tx.profile.findUnique({
       where: { id: profileId },
-      select: { likesCount: true },
+      select: { likesCount: true, userId: true },
     });
 
     if (!profile) {
       return null;
+    }
+
+    if (profile.userId === userId) {
+      return { error: "CANNOT_SAVE_OWN_PROFILE" as const };
     }
 
     const existing = await tx.savedItem.findUnique({
@@ -82,6 +86,10 @@ export async function POST(request: Request) {
 
   if (!result) {
     return notFound("PROFILE_NOT_FOUND");
+  }
+
+  if ("error" in result) {
+    return Response.json({ error: result.error }, { status: 403 });
   }
 
   return ok(result);

@@ -20,6 +20,8 @@ import {
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/components/ui/use-toast";
 import type { City } from "@/lib/location/cities";
+import { IMAGE_ACCEPT } from "@/lib/media/formats";
+import { responsiveImageLoader } from "@/lib/media/responsive-images";
 
 import { upsertPersonalInfo } from "@/lib/profile/profile-actions";
 
@@ -280,10 +282,12 @@ export function PersonalInfoForm({ cities, initialValues }: PersonalInfoFormProp
             <div className="overflow-hidden rounded-md border">
               <Image
                 src={values.avatarUrl}
+                loader={responsiveImageLoader}
                 alt="پیش‌نمایش تصویر پروفایل"
                 width={160}
                 height={160}
                 className="h-40 w-40 object-cover"
+                sizes="160px"
               />
             </div>
             <p className="text-xs text-muted-foreground" dir="ltr">
@@ -295,7 +299,7 @@ export function PersonalInfoForm({ cities, initialValues }: PersonalInfoFormProp
           id="avatar"
           name="avatar"
           type="file"
-          accept="image/png,image/jpeg,image/webp"
+          accept={IMAGE_ACCEPT}
           disabled={isPending}
           dir="ltr"
         />

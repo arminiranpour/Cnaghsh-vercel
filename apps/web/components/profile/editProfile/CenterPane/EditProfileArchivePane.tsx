@@ -9,10 +9,11 @@ import ProfileCard from "@/components/profiles/ProfileCard";
 import { MovieCard, type MovieCardItem } from "@/app/(public)/movies/_components/movie-card";
 import { EDIT_PROFILE_MOBILE_BOTTOM_NAV_H } from "@/components/profile/editProfile/constants";
 
-import profileIcon from "../profile_8536054.png";
-import booksIcon from "../books_2182787.png";
-import monologueIcon from "../monolougue_6681932.png";
-import moviesIcon from "../movies_8944076.png";
+
+const profileIcon = "/cineflash/Profile/editProfile/archieve/profiles.svg";
+const booksIcon = "/cineflash/Profile/editProfile/archieve/books.svg";
+const monologueIcon = "/cineflash/Profile/editProfile/archieve/monologues.svg";
+const moviesIcon = "/cineflash/Profile/editProfile/archieve/movies.svg";
 
 const numberFormatter = new Intl.NumberFormat("fa-IR", { useGrouping: false });
 
@@ -215,7 +216,7 @@ export function EditProfileArchivePane({ counts }: EditProfileArchivePaneProps) 
 type ArchiveTileProps = {
   label: string;
   count: number;
-  iconSrc: typeof profileIcon;
+  iconSrc: string;
   className?: string;
   variant?: "active" | "inactive";
   onClick?: () => void;

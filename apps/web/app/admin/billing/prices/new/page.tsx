@@ -1,9 +1,29 @@
-import { ProductType } from "@prisma/client";
+import { ProductType, type PlanCycle } from "@prisma/client";
 
 import { prisma } from "@/lib/db";
 
 import { createPrice } from "../actions";
 import { PriceForm } from "../price-form";
+
+const getPlanCycleLabel = (cycle: PlanCycle) => {
+  switch (cycle) {
+    case "MONTHLY":
+      return "ماهانه";
+    case "QUARTERLY":
+      return "سه ماهه";
+    case "YEARLY":
+      return "سالانه";
+  }
+};
+
+const getProductTypeLabel = (type: ProductType) => {
+  switch (type) {
+    case "JOB_POST":
+      return "ثبت آگهی";
+    case "SUBSCRIPTION":
+      return "اشتراک";
+  }
+};
 
 export default async function NewPricePage() {
   const plans = await prisma.plan.findMany({
@@ -18,20 +38,22 @@ export default async function NewPricePage() {
     orderBy: { createdAt: "asc" },
   });
 
-  const jobProducts = await prisma.product.findMany({
-    where: { active: true, type: ProductType.JOB_POST },
+  const products = await prisma.product.findMany({
+    where: { active: true, type: { not: ProductType.SUBSCRIPTION } },
     orderBy: { createdAt: "asc" },
   });
 
   const planOptions = plans.map((plan) => ({
     id: plan.id,
     name: plan.name,
+    cycleLabel: getPlanCycleLabel(plan.cycle),
     productName: plan.product?.name,
   }));
 
-  const productOptions = jobProducts.map((product) => ({
+  const productOptions = products.map((product) => ({
     id: product.id,
     name: product.name,
+    typeLabel: getProductTypeLabel(product.type),
   }));
 
   return (
@@ -39,7 +61,7 @@ export default async function NewPricePage() {
       <div>
         <h2 className="text-xl font-semibold">ایجاد قیمت</h2>
         <p className="text-sm text-muted-foreground">
-          مبلغ را وارد و مشخص کنید این قیمت برای پلن یا محصول تکی است.
+          برای اشتراک، قیمت را روی پلن ثبت کنید. برای سایر محصولات، قیمت روی خود محصول ثبت می‌شود.
         </p>
       </div>
       <PriceForm
